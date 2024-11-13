@@ -232,43 +232,41 @@ async function main() {
   const db = await setupDatabase();
 
   // TODO improve this as list grows
-  const nodeId = nodeIds.find(
-    async (nodeId) => await !isNodePosted(db, nodeId)
-  );
+  const nodeId = nodeIds.shift();
 
   // Check if the node has already been parsed and posted
-  // const alreadyPosted = await isNodePosted(db, nodeId);
+  const alreadyPosted = await isNodePosted(db, nodeId);
 
-  // if (!alreadyPosted) {
-  try {
-    // Scrape data from node view
-    const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
-    const scrapedData = await scrapePage(nodeUrl);
+  if (!alreadyPosted) {
+    try {
+      // Scrape data from node view
+      const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
+      const scrapedData = await scrapePage(nodeUrl);
 
-    // Temporary location for downloaded image
-    const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
+      // Temporary location for downloaded image
+      const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
 
-    // Download and resize the fullsize photo from the node
-    const resizedPath = await processImage(scrapedData.imageUrl);
+      // Download and resize the fullsize photo from the node
+      const resizedPath = await processImage(scrapedData.imageUrl);
 
-    if (process.env.BLUESKY_USERNAME && process.env.BLUESKY_PASSWORD) {
-      // Create the post and reply on Bluesky
-      await postToBluesky(resizedPath, scrapedData);
+      if (process.env.BLUESKY_USERNAME && process.env.BLUESKY_PASSWORD) {
+        // Create the post and reply on Bluesky
+        await postToBluesky(resizedPath, scrapedData);
 
-      // Save the node id to db after posting
-      await savePostedNode(db, nodeId);
-    } else {
-      console.log("No credentials?", process.env.BLUESKY_USERNAME);
+        // Save the node id to db after posting
+        await savePostedNode(db, nodeId);
+      } else {
+        console.log("No credentials?", process.env.BLUESKY_USERNAME);
+      }
+
+      // Clean up the downloaded image after posting
+      fs.unlinkSync(imagePath);
+    } catch (error) {
+      console.error("Failed to post image to Bluesky:", error);
     }
-
-    // Clean up the downloaded image after posting
-    fs.unlinkSync(imagePath);
-  } catch (error) {
-    console.error("Failed to post image to Bluesky:", error);
+  } else {
+    console.log(`Node id ${nodeId} has already been posted.`);
   }
-  // } else {
-  //   console.log(`Node id ${nodeId} has already been posted.`);
-  // }
 
   // Close the database connection when done
   await db.close();
