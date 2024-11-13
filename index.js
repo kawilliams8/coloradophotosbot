@@ -247,11 +247,19 @@ async function main() {
       // Download and resize the fullsize photo from the node
       const resizedPath = await processImage(scrapedData.imageUrl);
 
-      // Create the post and reply on Bluesky
-      await postToBluesky(resizedPath, scrapedData);
+      if (process.env.BLUESKY_USERNAME && process.env.BLUESKY_PASSWORD) {
+        // Create the post and reply on Bluesky
+        await postToBluesky(resizedPath, scrapedData);
 
-      // Save the node id to db after posting
-      // await savePostedNode(db, nodeId);
+        // Save the node id to db after posting
+        await savePostedNode(db, nodeId);
+      } else {
+        console.log(
+          "No credentials? ",
+          process.env.BLUESKY_USERNAME.length,
+          process.env.BLUESKY_PASSWORD.length
+        );
+      }
 
       // Clean up the downloaded image after posting
       fs.unlinkSync(imagePath);
