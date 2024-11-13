@@ -11,13 +11,7 @@ import path from "path";
 import sharp from "sharp";
 import { fileURLToPath } from "url";
 
-const mySecret = process.env.BLUESKY_USERNAME;
-console.log("Index.js, the secret is:", mySecret);
-
 dotenv.config();
-
-const mySecret2 = process.env.BLUESKY_USERNAME;
-console.log("Index.js, the second secret is:", mySecret2);
 
 // Get the current file path and directory path
 const __filename = fileURLToPath(import.meta.url);
@@ -283,6 +277,6 @@ main();
 const scheduleExpressionMinute = "* * * * *"; // Run once every minute
 const scheduleExpression = "0 */4 * * *"; // Run once every four hours
 
-const job = new CronJob(scheduleExpression, main);
+const job = new CronJob(scheduleExpressionMinute, main);
 
 job.start();

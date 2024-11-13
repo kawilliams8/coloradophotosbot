@@ -27,15 +27,9 @@ jobs:
 
       - run: npm ci
       - run: npm run build --if-present
-      #- env:
-      #    BLUESKY_USERNAME: ${{ secrets.BLUESKY_USERNAME }}
-      #    BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
-      #  run: echo "The username is $BLUESKY_USERNAME"
-      #- run: npm run start
 
-      - name: Run script
+      - name: Run bot script
         env:
           BLUESKY_USERNAME: ${{ secrets.BLUESKY_USERNAME }}
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
-          run: echo "The username is $BLUESKY_USERNAME"
         run: npm run start
