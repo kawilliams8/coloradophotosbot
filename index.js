@@ -1,8 +1,11 @@
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 import { BskyAgent } from "@atproto/api";
 import * as dotenv from "dotenv";
 import { CronJob } from "cron";
 import * as process from "process";
 import axios from "axios";
+import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
@@ -20,6 +23,79 @@ const MAX_FILE_SIZE = 500 * 1024;
 // Target dimensions if resizing is needed
 const TARGET_WIDTH = 600;
 const TARGET_HEIGHT = 600;
+
+// Open or create an SQLite database file
+async function setupDatabase() {
+  const db = await open({
+    filename: "./nodes.db",
+    driver: sqlite3.Database,
+  });
+
+  // Create a table to store used node IDs (if it doesn't exist)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS posted_nodes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      node_id TEXT UNIQUE,
+      post_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  return db;
+}
+
+async function savePostedNode(db, nodeId) {
+  try {
+    await db.run("INSERT INTO posted_nodes (node_id) VALUES (?)", nodeId);
+    console.log(`Node ID ${nodeId} saved to the database.`);
+  } catch (error) {
+    if (error.code === "SQLITE_CONSTRAINT") {
+      console.log(`Node ID ${nodeId} is already in the database.`);
+    } else {
+      console.error("Error saving node ID:", error);
+    }
+  }
+}
+
+async function isNodePosted(db, nodeId) {
+  const result = await db.get(
+    "SELECT * FROM posted_nodes WHERE node_id = ?",
+    nodeId
+  );
+  return !!result; // Returns true if found, false if not
+}
+
+async function scrapePage(url) {
+  try {
+    // Fetch the HTML of the page
+    const { data } = await axios.get(url);
+
+    // Load HTML into cheerio
+    const $ = cheerio.load(data);
+
+    // Now you can use jQuery-style selectors to scrape information
+    const title = $('meta[property="og:title"]').attr("content");
+    const relatedImageUrl = $('meta[property="og:image"]').attr("content");
+    const nodeUrl = $('meta[property="og:url"]').attr("content");
+
+    const summary = $(".titlelabel")
+      .filter(function () {
+        return $(this).text().trim() === "Summary";
+      })
+      .parent()
+      .text();
+
+    const altSummary = $(".titlelabel")
+      .filter(function () {
+        return $(this).text().trim() === "Alternate Title";
+      })
+      .parent()
+      .text();
+
+    return { title, relatedImageUrl, summary, altSummary, nodeUrl };
+  } catch (error) {
+    console.error("Error fetching the page:", error);
+  }
+}
 
 async function downloadImage(url, outputPath) {
   const response = await axios({
@@ -67,52 +143,97 @@ async function processImage(url) {
 }
 
 async function main() {
-  try {
-    // Where to save the image temporarily
-    const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
+  // Set up the databas
+  const db = await setupDatabase();
 
-    // Download and resize the photo
-    const resizedPath = await processImage(
-      "https://digital.denverlibrary.org/assets/display/2332473-max" //TODO
-    );
+  const nodeId = 1075229; // TODO randomize
 
-    // Create a Bluesky Agent
-    const agent = new BskyAgent({
-      service: "https://bsky.social",
-    });
+  // Check if the node has already been parsed and posted
+  const alreadyPosted = await isNodePosted(db, nodeId);
 
-    // login
-    await agent.login({
-      identifier: process.env.BLUESKY_USERNAME,
-      password: process.env.BLUESKY_PASSWORD,
-    });
+  if (!alreadyPosted) {
+    try {
+      // Scrape data from node view
+      const url = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
+      const scrapedData = await scrapePage(url);
 
-    // Upload the image to Bluesky
-    const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
-      encoding: "image/jpeg",
-    });
+      // Where to save the image temporarily
+      const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
 
-    // Post with the uploaded image, TODO
-    await agent.post({
-      text: "This is an automated test post with an image and caption. (It's a photo of the old St. Vincent's Hospital in Leadville.)",
-      embed: {
-        $type: "app.bsky.embed.images",
-        images: [
-          {
-            image: imageUpload.data.blob,
-            alt: "This is test alt text. (It's a photo of the old St. Vincent's Hospital in Leadville.)",
+      // Download and resize the photo
+      const resizedPath = await processImage(scrapedData.relatedImageUrl);
+
+      // Create a Bluesky Agent
+      const agent = new BskyAgent({
+        service: "https://bsky.social",
+      });
+
+      // login
+      await agent.login({
+        identifier: process.env.BLUESKY_USERNAME,
+        password: process.env.BLUESKY_PASSWORD,
+      });
+
+      // Upload the image
+      const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
+        encoding: "image/jpeg",
+      });
+
+      // Compose post text and alt tag
+      const text =
+        scrapedData.title.slice(0, 50) +
+          " | " +
+          scrapedData.summary.slice(7, 235) ??
+        scrapedData.altSummary.slice(0, 235);
+      // Post with the uploaded image
+      const result = await agent.post({
+        text: text,
+        embed: {
+          $type: "app.bsky.embed.images",
+          images: [
+            {
+              image: imageUpload.data.blob,
+              alt: text,
+            },
+          ],
+        },
+      });
+
+      console.log("Image posted successfully!", result);
+
+      // Conditionally reply to the image with the node URL
+      if (scrapedData.nodeUrl.length) {
+        await agent.post({
+          text: "See original DPL Archive post at: " + scrapedData.nodeUrl,
+          reply: {
+            root: {
+              uri: result.uri,
+              cid: result.cid,
+            },
+            parent: {
+              uri: result.uri,
+              cid: result.cid,
+            },
           },
-        ],
-      },
-    });
+          createdAt: new Date().toISOString(),
+        });
+      }
 
-    console.log("Image posted successfully!");
+      // Save the photo ID to db after posting
+      await savePostedNode(db, nodeId);
 
-    // Clean up the image after posting
-    fs.unlinkSync(imagePath);
-  } catch (error) {
-    console.error("Failed to post image:", error);
+      // Clean up the downloaded image after posting
+      fs.unlinkSync(imagePath);
+    } catch (error) {
+      console.error("Failed to post image:", error);
+    }
+  } else {
+    console.log(`Node ID ${nodeId} has already been posted.`);
   }
+
+  // Close the database connection when done
+  await db.close();
+  console.log("db closed, exiting main");
 }
 
 main();
