@@ -10,7 +10,7 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 import { fileURLToPath } from "url";
-import nodeIds from "./nodeIds.js";
+import { nodeIds } from "./nodeIds.js";
 
 dotenv.config();
 
