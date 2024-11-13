@@ -25,7 +25,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
 
-      - name: Set up secrets
+      - name: Set up env vars
         env:
           BLUESKY_USERNAME: ${{ secrets.BLUESKY_USERNAME }}
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
@@ -33,5 +33,4 @@ jobs:
 
       - run: npm ci
       - run: npm run build --if-present
-      - run: echo "The second username is $BLUESKY_USERNAME"
       - run: npm run start
