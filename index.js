@@ -238,10 +238,12 @@ async function main() {
   if (!nodeId) {
     // abort! the array is empty
     await db.close();
-    console.log("node ids list empty, exiting main");
+    console.log("node ids list empty, db closed, exiting main");
+    return;
   }
 
   // Check if the node has already been parsed and posted
+  console.log("Picked a node id from array: ", nodeId);
   const alreadyPosted = await isNodePosted(db, nodeId);
 
   if (!alreadyPosted) {
@@ -275,17 +277,18 @@ async function main() {
     console.log(`Tried to post with a used node id ${nodeId}.`);
   }
 
-  // Close the database connection when done
+  // Close the database connection when done with one post
   await db.close();
-  console.log("db closed, exiting main");
+  console.log("db closed, exiting main but still looping");
 }
 
 main();
 
 // Run this on a cron job
 const scheduleExpressionMinute = "* * * * *"; // Run once every minute
+const scheduleExpressionHour = "0 */1 * * *"; // Run once every hour
 const scheduleExpression = "0 */4 * * *"; // Run once every four hours
 
-const job = new CronJob(scheduleExpressionMinute, main);
+const job = new CronJob(scheduleExpressionHour, main);
 
 job.start();
