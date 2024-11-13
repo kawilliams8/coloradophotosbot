@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
+import { BskyAgent } from "@atproto/api";
 import * as dotenv from "dotenv";
 import { CronJob } from "cron";
 import * as process from "process";
@@ -156,10 +157,51 @@ function processImage(url) {
 }
 function postToBluesky(resizedPath, scrapedData) {
     return __awaiter(this, void 0, void 0, function* () {
+        const agent = new BskyAgent({
+            service: "https://bsky.social",
+        });
+        if (!process.env.BLUESKY_USERNAME || !process.env.BLUESKY_PASSWORD) {
+            return;
+        }
+        yield agent.login({
+            identifier: process.env.BLUESKY_USERNAME,
+            password: process.env.BLUESKY_PASSWORD,
+        });
+        const imageUpload = yield agent.uploadBlob(fs.readFileSync(resizedPath), {
+            encoding: "image/jpeg",
+        });
         const text = composePostText(scrapedData);
+        const result = yield agent.post({
+            text,
+            embed: {
+                $type: "app.bsky.embed.images",
+                images: [
+                    {
+                        image: imageUpload.data.blob,
+                        alt: text,
+                    },
+                ],
+            },
+        });
         process.stdout.write("\u0007");
         process.stdout.write("\u0007");
         process.stdout.write("\u0007");
+        if (scrapedData.nodeUrl.length) {
+            yield agent.post({
+                text: "DPL Archive post: " + scrapedData.nodeUrl,
+                reply: {
+                    root: {
+                        uri: result.uri,
+                        cid: result.cid,
+                    },
+                    parent: {
+                        uri: result.uri,
+                        cid: result.cid,
+                    },
+                },
+                createdAt: new Date().toISOString(),
+            });
+        }
     });
 }
 function main() {

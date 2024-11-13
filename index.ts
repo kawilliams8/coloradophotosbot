@@ -187,39 +187,39 @@ async function processImage(url: string) {
 
 async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
   // Create a Bluesky Agent
-  // const agent = new BskyAgent({
-  //   service: "https://bsky.social",
-  // });
+  const agent = new BskyAgent({
+    service: "https://bsky.social",
+  });
 
   // login
-  // if (!process.env.BLUESKY_USERNAME || !process.env.BLUESKY_PASSWORD) {
-  //   return;
-  // }
-  // await agent.login({
-  //   identifier: process.env.BLUESKY_USERNAME,
-  //   password: process.env.BLUESKY_PASSWORD,
-  // });
+  if (!process.env.BLUESKY_USERNAME || !process.env.BLUESKY_PASSWORD) {
+    return;
+  }
+  await agent.login({
+    identifier: process.env.BLUESKY_USERNAME,
+    password: process.env.BLUESKY_PASSWORD,
+  });
 
   // Upload the image
-  // const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
-  //   encoding: "image/jpeg",
-  // });
+  const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
+    encoding: "image/jpeg",
+  });
 
   const text = composePostText(scrapedData);
 
   // Post with the uploaded image
-  // const result = await agent.post({
-  //   text,
-  //   embed: {
-  //     $type: "app.bsky.embed.images",
-  //     images: [
-  //       {
-  //         image: imageUpload.data.blob,
-  //         alt: text,
-  //       },
-  //     ],
-  //   },
-  // });
+  const result = await agent.post({
+    text,
+    embed: {
+      $type: "app.bsky.embed.images",
+      images: [
+        {
+          image: imageUpload.data.blob,
+          alt: text,
+        },
+      ],
+    },
+  });
 
   // console.log("Image posted successfully!");
   process.stdout.write("\u0007"); // meep meep meep! local only :(
@@ -227,22 +227,22 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
   process.stdout.write("\u0007");
 
   // Conditionally reply to the image with the node URL
-  // if (scrapedData.nodeUrl.length) {
-  //   await agent.post({
-  //     text: "DPL Archive post: " + scrapedData.nodeUrl,
-  //     reply: {
-  //       root: {
-  //         uri: result.uri,
-  //         cid: result.cid,
-  //       },
-  //       parent: {
-  //         uri: result.uri,
-  //         cid: result.cid,
-  //       },
-  //     },
-  //     createdAt: new Date().toISOString(),
-  //   });
-  // }
+  if (scrapedData.nodeUrl.length) {
+    await agent.post({
+      text: "DPL Archive post: " + scrapedData.nodeUrl,
+      reply: {
+        root: {
+          uri: result.uri,
+          cid: result.cid,
+        },
+        parent: {
+          uri: result.uri,
+          cid: result.cid,
+        },
+      },
+      createdAt: new Date().toISOString(),
+    });
+  }
 }
 
 async function main() {
