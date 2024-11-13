@@ -16,6 +16,9 @@ console.log("Index.js, the secret is:", mySecret);
 
 dotenv.config();
 
+const mySecret2 = process.env.BLUESKY_USERNAME;
+console.log("Index.js, the second secret is:", mySecret2);
+
 // Get the current file path and directory path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
