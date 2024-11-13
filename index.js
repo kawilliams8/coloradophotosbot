@@ -24,14 +24,14 @@ const MAX_FILE_SIZE = 500 * 1024;
 const TARGET_WIDTH = 600;
 const TARGET_HEIGHT = 600;
 
-// Open or create an SQLite database file
+// Open or create an SQLite database file to track used archive nodes
 async function setupDatabase() {
   const db = await open({
     filename: "./nodes.db",
     driver: sqlite3.Database,
   });
 
-  // Create a table to store used node IDs (if it doesn't exist)
+  // Add table, if needed
   await db.exec(`
     CREATE TABLE IF NOT EXISTS posted_nodes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,12 +46,12 @@ async function setupDatabase() {
 async function savePostedNode(db, nodeId) {
   try {
     await db.run("INSERT INTO posted_nodes (node_id) VALUES (?)", nodeId);
-    console.log(`Node ID ${nodeId} saved to the database.`);
+    console.log(`Node id ${nodeId} saved to the database.`);
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT") {
-      console.log(`Node ID ${nodeId} is already in the database.`);
+      console.log(`Node id ${nodeId} is already in the database.`);
     } else {
-      console.error("Error saving node ID:", error);
+      console.error("Error saving node id:", error);
     }
   }
 }
@@ -61,7 +61,7 @@ async function isNodePosted(db, nodeId) {
     "SELECT * FROM posted_nodes WHERE node_id = ?",
     nodeId
   );
-  return !!result; // Returns true if found, false if not
+  return !!result; // true if found
 }
 
 async function scrapePage(url) {
@@ -69,32 +69,60 @@ async function scrapePage(url) {
     // Fetch the HTML of the page
     const { data } = await axios.get(url);
 
-    // Load HTML into cheerio
+    // Load HTML into cheerio to parse with JQuery-style methods
     const $ = cheerio.load(data);
+    const title = $('meta[property="og:title"]').attr("content") ?? "";
+    const imageUrl = $('meta[property="og:image"]').attr("content") ?? "";
+    const nodeUrl = $('meta[property="og:url"]').attr("content") ?? "";
 
-    // Now you can use jQuery-style selectors to scrape information
-    const title = $('meta[property="og:title"]').attr("content");
-    const relatedImageUrl = $('meta[property="og:image"]').attr("content");
-    const nodeUrl = $('meta[property="og:url"]').attr("content");
+    const imageDate =
+      $(".titlelabel")
+        .filter(function () {
+          return $(this).text().trim() === "Date";
+        })
+        .parent()
+        .text()
+        .slice(4) ?? "";
 
-    const summary = $(".titlelabel")
-      .filter(function () {
-        return $(this).text().trim() === "Summary";
-      })
-      .parent()
-      .text();
+    const summary =
+      $(".titlelabel")
+        .filter(function () {
+          return $(this).text().trim() === "Summary";
+        })
+        .parent()
+        .text()
+        .slice(7) ?? "";
 
-    const altSummary = $(".titlelabel")
-      .filter(function () {
-        return $(this).text().trim() === "Alternate Title";
-      })
-      .parent()
-      .text();
+    const altSummary =
+      $(".titlelabel")
+        .filter(function () {
+          return $(this).text().trim() === "Alternate Title";
+        })
+        .parent()
+        .text() ?? "";
 
-    return { title, relatedImageUrl, summary, altSummary, nodeUrl };
+    return { title, imageUrl, imageDate, summary, altSummary, nodeUrl };
   } catch (error) {
-    console.error("Error fetching the page:", error);
+    console.error("Error scraping the page:", error);
   }
+}
+
+function truncate(text, maxChars) {
+  return text.length > maxChars ? text.slice(0, maxChars) + "... " : text;
+}
+
+function composePostText({ title, imageDate, summary, altSummary }) {
+  // Node title | Node summary
+  // Max 300 chars
+  // "Last bivouac at Camp Hale... | 1940-1945 | 10th Mountain Division soldiers rest near their tents, which are set up in rows..."
+  const dateSeparator = ` | ${imageDate} | `;
+  const text =
+    truncate(title, 50) +
+      dateSeparator +
+      truncate(summary, 245 - dateSeparator.length) ??
+    truncate(altSummary, 245 - dateSeparator.length);
+  console.log("Composed post text: ", text);
+  return text;
 }
 
 async function downloadImage(url, outputPath) {
@@ -113,7 +141,7 @@ async function downloadImage(url, outputPath) {
 async function checkAndResizeImage(imagePath) {
   const stats = fs.statSync(imagePath);
 
-  // If file size is greater than MAX_FILE_SIZE, resize it
+  // If downloaded image is greater than MAX_FILE_SIZE, resize it
   if (stats.size > MAX_FILE_SIZE) {
     const resizedImagePath = path.resolve(__dirname, "resized_image.jpg");
     await sharp(imagePath)
@@ -129,106 +157,109 @@ async function checkAndResizeImage(imagePath) {
 }
 
 async function processImage(url) {
-  const originalImagePath = path.resolve(__dirname, "downloaded_image.jpg");
+  const fullsizeImagePath = path.resolve(__dirname, "downloaded_image.jpg");
 
   try {
-    await downloadImage(url, originalImagePath);
-    const finalImagePath = await checkAndResizeImage(originalImagePath);
+    await downloadImage(url, fullsizeImagePath);
+    const resizedImagePath = await checkAndResizeImage(fullsizeImagePath);
 
-    console.log(`Final image available at: ${finalImagePath}`);
-    return finalImagePath;
+    console.log(`Final image available at: ${resizedImagePath}`);
+    return resizedImagePath;
   } catch (error) {
     console.error("Error downloading or resizing the image:", error);
   }
 }
 
+async function postToBluesky(resizedPath, scrapedData) {
+  // Create a Bluesky Agent
+  const agent = new BskyAgent({
+    service: "https://bsky.social",
+  });
+
+  // login
+  await agent.login({
+    identifier: process.env.BLUESKY_USERNAME,
+    password: process.env.BLUESKY_PASSWORD,
+  });
+
+  // Upload the image
+  const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
+    encoding: "image/jpeg",
+  });
+
+  const text = composePostText(scrapedData);
+
+  // Post with the uploaded image
+  const result = await agent.post({
+    text,
+    embed: {
+      $type: "app.bsky.embed.images",
+      images: [
+        {
+          image: imageUpload.data.blob,
+          alt: text,
+        },
+      ],
+    },
+  });
+
+  console.log("Image posted successfully!");
+  process.stdout.write("\u0007");
+  process.stdout.write("\u0007");
+  process.stdout.write("\u0007");
+
+  // Conditionally reply to the image with the node URL
+  if (scrapedData.nodeUrl.length) {
+    await agent.post({
+      text: "DPL Archive post: " + scrapedData.nodeUrl,
+      reply: {
+        root: {
+          uri: result.uri,
+          cid: result.cid,
+        },
+        parent: {
+          uri: result.uri,
+          cid: result.cid,
+        },
+      },
+      createdAt: new Date().toISOString(),
+    });
+  }
+}
+
 async function main() {
-  // Set up the databas
   const db = await setupDatabase();
 
-  const nodeId = 1075229; // TODO randomize
+  const nodeId = 1025128; // TODO randomize
 
   // Check if the node has already been parsed and posted
   const alreadyPosted = await isNodePosted(db, nodeId);
 
-  if (!alreadyPosted) {
+  if (true) {
     try {
       // Scrape data from node view
-      const url = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
-      const scrapedData = await scrapePage(url);
+      const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
+      const scrapedData = await scrapePage(nodeUrl);
 
-      // Where to save the image temporarily
+      // Temporary location for downloaded image
       const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
 
-      // Download and resize the photo
-      const resizedPath = await processImage(scrapedData.relatedImageUrl);
+      // Download and resize the fullsize photo from the node
+      const resizedPath = await processImage(scrapedData.imageUrl);
 
-      // Create a Bluesky Agent
-      const agent = new BskyAgent({
-        service: "https://bsky.social",
-      });
+      // Create the post and reply on Bluesky
+      await postToBluesky(resizedPath, scrapedData);
 
-      // login
-      await agent.login({
-        identifier: process.env.BLUESKY_USERNAME,
-        password: process.env.BLUESKY_PASSWORD,
-      });
-
-      // Upload the image
-      const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
-        encoding: "image/jpeg",
-      });
-
-      // Compose post text and alt tag
-      const text =
-        scrapedData.title.slice(0, 50) +
-          " | " +
-          scrapedData.summary.slice(7, 235) ??
-        scrapedData.altSummary.slice(0, 235);
-      // Post with the uploaded image
-      const result = await agent.post({
-        text: text,
-        embed: {
-          $type: "app.bsky.embed.images",
-          images: [
-            {
-              image: imageUpload.data.blob,
-              alt: text,
-            },
-          ],
-        },
-      });
-
-      console.log("Image posted successfully!", result);
-
-      // Conditionally reply to the image with the node URL
-      if (scrapedData.nodeUrl.length) {
-        await agent.post({
-          text: "See original DPL Archive post at: " + scrapedData.nodeUrl,
-          reply: {
-            root: {
-              uri: result.uri,
-              cid: result.cid,
-            },
-            parent: {
-              uri: result.uri,
-              cid: result.cid,
-            },
-          },
-          createdAt: new Date().toISOString(),
-        });
-      }
-
-      // Save the photo ID to db after posting
-      await savePostedNode(db, nodeId);
+      // Save the node id to db after posting
+      // await savePostedNode(db, nodeId);
 
       // Clean up the downloaded image after posting
       fs.unlinkSync(imagePath);
     } catch (error) {
-      console.error("Failed to post image:", error);
+      console.error("Failed to post image to Bluesky:", error);
     }
   } else {
-    console.log(`Node ID ${nodeId} has already been posted.`);
+    console.log(`Node id ${nodeId} has already been posted.`);
   }
 
   // Close the database connection when done
@@ -239,9 +270,9 @@ async function main() {
 main();
 
 // Run this on a cron job
-const scheduleExpressionMinute = "* * * * *"; // Run once every minute for testing
-const scheduleExpression = "0 */3 * * *"; // Run once every three hours in prod
+const scheduleExpressionMinute = "* * * * *"; // Run once every minute
+const scheduleExpression = "0 */4 * * *"; // Run once every four hours
 
-const job = new CronJob(scheduleExpression, main); // change to scheduleExpressionMinute for testing
+const job = new CronJob(scheduleExpression, main);
 
 job.start();
