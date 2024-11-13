@@ -50,7 +50,9 @@ async function savePostedNode(db, nodeId) {
     console.log(`Node id ${nodeId} saved to the database.`);
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT") {
-      console.log(`Node id ${nodeId} is already in the database.`);
+      console.log(
+        `Node id ${nodeId} is already in the database (after posting?).`
+      );
     } else {
       console.error("Error saving node id:", error);
     }
@@ -233,6 +235,11 @@ async function main() {
 
   // TODO improve this as list grows
   const nodeId = nodeIds.shift();
+  if (!nodeId) {
+    // abort! the array is empty
+    await db.close();
+    console.log("node ids list empty, exiting main");
+  }
 
   // Check if the node has already been parsed and posted
   const alreadyPosted = await isNodePosted(db, nodeId);
@@ -265,7 +272,7 @@ async function main() {
       console.error("Failed to post image to Bluesky:", error);
     }
   } else {
-    console.log(`Node id ${nodeId} has already been posted.`);
+    console.log(`Tried to post with a used node id ${nodeId}.`);
   }
 
   // Close the database connection when done
