@@ -11,6 +11,9 @@ import path from "path";
 import sharp from "sharp";
 import { fileURLToPath } from "url";
 
+const mySecret = process.env.BLUESKY_USERNAME;
+console.log("Index.js, the secret is:", mySecret);
+
 dotenv.config();
 
 // Get the current file path and directory path
@@ -254,11 +257,7 @@ async function main() {
         // Save the node id to db after posting
         await savePostedNode(db, nodeId);
       } else {
-        console.log(
-          "No credentials? ",
-          process.env.BLUESKY_USERNAME.length,
-          process.env.BLUESKY_PASSWORD.length
-        );
+        console.log("No credentials?", process.env.BLUESKY_USERNAME);
       }
 
       // Clean up the downloaded image after posting
