@@ -1,16 +1,17 @@
 import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+import { Database, open } from "sqlite";
 import { BskyAgent } from "@atproto/api";
 import * as dotenv from "dotenv";
 import { CronJob } from "cron";
 import * as process from "process";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import fs from "fs";
+import fs, { PathLike } from "fs";
 import path from "path";
 import sharp from "sharp";
 import { fileURLToPath } from "url";
 import { nodeIds } from "./nodeIds.js";
+import { ScrapedData } from "./types";
 
 dotenv.config();
 
@@ -44,7 +45,10 @@ async function setupDatabase() {
   return db;
 }
 
-async function savePostedNode(db, nodeId) {
+async function savePostedNode(
+  db: Database<sqlite3.Database, sqlite3.Statement>,
+  nodeId: number
+) {
   try {
     await db.run("INSERT INTO posted_nodes (node_id) VALUES (?)", nodeId);
     console.log(`Node id ${nodeId} saved to the database.`);
@@ -59,7 +63,10 @@ async function savePostedNode(db, nodeId) {
   }
 }
 
-async function isNodePosted(db, nodeId) {
+async function isNodePosted(
+  db: Database<sqlite3.Database, sqlite3.Statement>,
+  nodeId: number
+) {
   const result = await db.get(
     "SELECT * FROM posted_nodes WHERE node_id = ?",
     nodeId
@@ -67,7 +74,7 @@ async function isNodePosted(db, nodeId) {
   return !!result; // true if found
 }
 
-async function scrapePage(url) {
+async function scrapePage(url: string): Promise<ScrapedData | undefined> {
   try {
     // Fetch the HTML of the page
     const { data } = await axios.get(url);
@@ -85,7 +92,7 @@ async function scrapePage(url) {
         })
         .parent()
         .text()
-        .slice(4) ?? "";
+        .slice(4) ?? ""; // Strip off "Date"
 
     const summary =
       $(".titlelabel")
@@ -94,7 +101,7 @@ async function scrapePage(url) {
         })
         .parent()
         .text()
-        .slice(7) ?? "";
+        .slice(7) ?? ""; // Strip off "Summary"
 
     const altSummary =
       $(".titlelabel")
@@ -110,25 +117,30 @@ async function scrapePage(url) {
   }
 }
 
-function truncate(text, maxChars) {
+function truncate(text: string, maxChars: number) {
   return text.length > maxChars ? text.slice(0, maxChars) + "... " : text;
 }
 
-function composePostText({ title, imageDate, summary, altSummary }) {
-  // Node title | Node summary
+function composePostText({
+  title,
+  imageDate,
+  summary,
+  altSummary,
+}: ScrapedData) {
+  // Node title | Node date | Node summary
   // Max 300 chars
-  // "Last bivouac at Camp Hale... | 1940-1945 | 10th Mountain Division soldiers rest near their tents, which are set up in rows..."
-  const dateSeparator = ` | ${imageDate} | `;
+  // "Last bivouac at Camp Hale... | 1940-1945 | 10th Mountain Division soldiers rest..."
+  const dateSeparator = ` | ${imageDate} | `; // image date is a varied string, might be long
   const text =
     truncate(title, 50) +
-      dateSeparator +
-      truncate(summary, 245 - dateSeparator.length) ??
-    truncate(altSummary, 245 - dateSeparator.length);
+    dateSeparator +
+    (truncate(summary, 245 - dateSeparator.length) ??
+      truncate(altSummary, 245 - dateSeparator.length));
   console.log("Composed post text: ", text);
   return text;
 }
 
-async function downloadImage(url, outputPath) {
+async function downloadImage(url: string | undefined, outputPath: PathLike) {
   const response = await axios({
     url,
     responseType: "stream",
@@ -141,13 +153,13 @@ async function downloadImage(url, outputPath) {
   });
 }
 
-async function checkAndResizeImage(imagePath) {
+async function checkAndResizeImage(imagePath: PathLike) {
   const stats = fs.statSync(imagePath);
 
   // If downloaded image is greater than MAX_FILE_SIZE, resize it
   if (stats.size > MAX_FILE_SIZE) {
     const resizedImagePath = path.resolve(__dirname, "resized_image.jpg");
-    await sharp(imagePath)
+    await sharp(imagePath as string)
       .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: "inside" })
       .toFile(resizedImagePath);
 
@@ -159,7 +171,7 @@ async function checkAndResizeImage(imagePath) {
   return imagePath;
 }
 
-async function processImage(url) {
+async function processImage(url: string) {
   const fullsizeImagePath = path.resolve(__dirname, "downloaded_image.jpg");
 
   try {
@@ -173,61 +185,64 @@ async function processImage(url) {
   }
 }
 
-async function postToBluesky(resizedPath, scrapedData) {
+async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
   // Create a Bluesky Agent
-  const agent = new BskyAgent({
-    service: "https://bsky.social",
-  });
+  // const agent = new BskyAgent({
+  //   service: "https://bsky.social",
+  // });
 
   // login
-  await agent.login({
-    identifier: process.env.BLUESKY_USERNAME,
-    password: process.env.BLUESKY_PASSWORD,
-  });
+  // if (!process.env.BLUESKY_USERNAME || !process.env.BLUESKY_PASSWORD) {
+  //   return;
+  // }
+  // await agent.login({
+  //   identifier: process.env.BLUESKY_USERNAME,
+  //   password: process.env.BLUESKY_PASSWORD,
+  // });
 
   // Upload the image
-  const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
-    encoding: "image/jpeg",
-  });
+  // const imageUpload = await agent.uploadBlob(fs.readFileSync(resizedPath), {
+  //   encoding: "image/jpeg",
+  // });
 
   const text = composePostText(scrapedData);
 
   // Post with the uploaded image
-  const result = await agent.post({
-    text,
-    embed: {
-      $type: "app.bsky.embed.images",
-      images: [
-        {
-          image: imageUpload.data.blob,
-          alt: text,
-        },
-      ],
-    },
-  });
+  // const result = await agent.post({
+  //   text,
+  //   embed: {
+  //     $type: "app.bsky.embed.images",
+  //     images: [
+  //       {
+  //         image: imageUpload.data.blob,
+  //         alt: text,
+  //       },
+  //     ],
+  //   },
+  // });
 
-  console.log("Image posted successfully!");
+  // console.log("Image posted successfully!");
   process.stdout.write("\u0007"); // meep meep meep! local only :(
   process.stdout.write("\u0007");
   process.stdout.write("\u0007");
 
   // Conditionally reply to the image with the node URL
-  if (scrapedData.nodeUrl.length) {
-    await agent.post({
-      text: "DPL Archive post: " + scrapedData.nodeUrl,
-      reply: {
-        root: {
-          uri: result.uri,
-          cid: result.cid,
-        },
-        parent: {
-          uri: result.uri,
-          cid: result.cid,
-        },
-      },
-      createdAt: new Date().toISOString(),
-    });
-  }
+  // if (scrapedData.nodeUrl.length) {
+  //   await agent.post({
+  //     text: "DPL Archive post: " + scrapedData.nodeUrl,
+  //     reply: {
+  //       root: {
+  //         uri: result.uri,
+  //         cid: result.cid,
+  //       },
+  //       parent: {
+  //         uri: result.uri,
+  //         cid: result.cid,
+  //       },
+  //     },
+  //     createdAt: new Date().toISOString(),
+  //   });
+  // }
 }
 
 async function main() {
@@ -242,7 +257,7 @@ async function main() {
     return;
   }
 
-  // Check if the node has already been parsed and posted
+  // Check if the node has already been parsed and posted, no duplicates!
   console.log("Picked a node id from array: ", nodeId);
   const alreadyPosted = await isNodePosted(db, nodeId);
 
@@ -251,6 +266,10 @@ async function main() {
       // Scrape data from node view
       const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
       const scrapedData = await scrapePage(nodeUrl);
+      if (!scrapedData) {
+        console.log("Scraping failed. Exiting.");
+        return;
+      }
 
       // Temporary location for downloaded image
       const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
@@ -258,7 +277,12 @@ async function main() {
       // Download and resize the fullsize photo from the node
       const resizedPath = await processImage(scrapedData.imageUrl);
 
-      if (process.env.BLUESKY_USERNAME && process.env.BLUESKY_PASSWORD) {
+      if (
+        process.env.BLUESKY_USERNAME &&
+        process.env.BLUESKY_PASSWORD &&
+        resizedPath &&
+        scrapedData
+      ) {
         // Create the post and reply on Bluesky
         await postToBluesky(resizedPath, scrapedData);
 
