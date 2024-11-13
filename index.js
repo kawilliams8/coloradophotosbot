@@ -235,7 +235,7 @@ async function main() {
   // Check if the node has already been parsed and posted
   const alreadyPosted = await isNodePosted(db, nodeId);
 
-  if (true) {
+  if (!alreadyPosted) {
     try {
       // Scrape data from node view
       const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
