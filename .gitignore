@@ -1,6 +1,7 @@
 .env
 node_modules
 resized_image.jpg
+/dist
 
 # Ignore SQLite journal files
 *.db-journal

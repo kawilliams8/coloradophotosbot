@@ -35,7 +35,7 @@ export async function savePostedNode(
 ) {
   try {
     await db.run("INSERT INTO posted_nodes (node_id) VALUES (?)", nodeId);
-    console.log(`Node id ${nodeId} saved to the database.`);
+    console.log(`Node id ${nodeId} saved to the posted nodes table.`);
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT") {
       console.log(
