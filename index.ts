@@ -2,7 +2,6 @@ import sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
 import { BskyAgent } from "@atproto/api";
 import * as dotenv from "dotenv";
-import { CronJob } from "cron";
 import * as process from "process";
 import axios from "axios";
 import * as cheerio from "cheerio";
@@ -221,7 +220,7 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
     },
   });
 
-  // console.log("Image posted successfully!");
+  console.log("Image posted successfully!");
   process.stdout.write("\u0007"); // meep meep meep! local only :(
   process.stdout.write("\u0007");
   process.stdout.write("\u0007");
@@ -303,16 +302,8 @@ async function main() {
 
   // Close the database connection when done with one post
   await db.close();
-  console.log("db closed, exiting main but still looping");
+  console.log("db closed, exiting main");
+  return;
 }
 
 main();
-
-// Run this on a cron job
-const scheduleExpressionMinute = "* * * * *"; // Run once every minute
-const scheduleExpressionHour = "0 */1 * * *"; // Run once every hour
-const scheduleExpression = "0 */4 * * *"; // Run once every four hours
-
-const job = new CronJob(scheduleExpressionHour, main);
-
-job.start();
