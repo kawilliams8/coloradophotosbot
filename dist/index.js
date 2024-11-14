@@ -11,7 +11,6 @@ import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import { BskyAgent } from "@atproto/api";
 import * as dotenv from "dotenv";
-import { CronJob } from "cron";
 import * as process from "process";
 import axios from "axios";
 import * as cheerio from "cheerio";
@@ -183,6 +182,7 @@ function postToBluesky(resizedPath, scrapedData) {
                 ],
             },
         });
+        console.log("Image posted successfully!");
         process.stdout.write("\u0007");
         process.stdout.write("\u0007");
         process.stdout.write("\u0007");
@@ -245,12 +245,8 @@ function main() {
             console.log(`Tried to post with a used node id ${nodeId}.`);
         }
         yield db.close();
-        console.log("db closed, exiting main but still looping");
+        console.log("db closed, exiting main");
+        return;
     });
 }
 main();
-const scheduleExpressionMinute = "* * * * *";
-const scheduleExpressionHour = "0 */1 * * *";
-const scheduleExpression = "0 */4 * * *";
-const job = new CronJob(scheduleExpressionHour, main);
-job.start();
