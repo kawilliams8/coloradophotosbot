@@ -58,7 +58,7 @@ export function getNextScheduledNodeId(db) {
 export function deleteScheduledNodeId(db, nodeId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield db.run("DELETE FROM scheduled_nodes WHERE id = ?", [nodeId]);
+            yield db.run("DELETE FROM scheduled_nodes WHERE node_id = ?", [nodeId]);
             console.log(`Node id ${nodeId} deleted from the scheduled nodes table.`);
         }
         catch (error) {

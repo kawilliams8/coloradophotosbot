@@ -61,7 +61,7 @@ export async function deleteScheduledNodeId(
   nodeId: number
 ) {
   try {
-    await db.run("DELETE FROM scheduled_nodes WHERE id = ?", [nodeId]);
+    await db.run("DELETE FROM scheduled_nodes WHERE node_id = ?", [nodeId]);
     console.log(`Node id ${nodeId} deleted from the scheduled nodes table.`);
   } catch (error) {
     console.error("Error deleting scheduled node id: ", error);
