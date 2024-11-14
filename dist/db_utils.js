@@ -55,10 +55,15 @@ export function getNextScheduledNodeId(db) {
         return result.node_id;
     });
 }
-export function deleteScheduledNodeId(db, id) {
+export function deleteScheduledNodeId(db, nodeId) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield db.run("DELETE FROM scheduled_nodes WHERE id = ?", [id]);
-        return result;
+        try {
+            yield db.run("DELETE FROM scheduled_nodes WHERE id = ?", [nodeId]);
+            console.log(`Node id ${nodeId} deleted from the scheduled nodes table.`);
+        }
+        catch (error) {
+            console.error("Error deleting scheduled node id: ", error);
+        }
     });
 }
 export function isNodePosted(db, nodeId) {

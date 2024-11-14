@@ -58,10 +58,14 @@ export async function getNextScheduledNodeId(
 
 export async function deleteScheduledNodeId(
   db: Database<sqlite3.Database, sqlite3.Statement>,
-  id: number
+  nodeId: number
 ) {
-  const result = await db.run("DELETE FROM scheduled_nodes WHERE id = ?", [id]);
-  return result;
+  try {
+    await db.run("DELETE FROM scheduled_nodes WHERE id = ?", [nodeId]);
+    console.log(`Node id ${nodeId} deleted from the scheduled nodes table.`);
+  } catch (error) {
+    console.error("Error deleting scheduled node id: ", error);
+  }
 }
 
 export async function isNodePosted(
