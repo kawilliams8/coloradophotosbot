@@ -57,7 +57,7 @@ export function getNextScheduledNodeId(db) {
 }
 export function deleteScheduledNodeId(db, id) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield db.get("DELETE FROM scheduled_nodes WHERE id = ?", [id]);
+        const result = yield db.run("DELETE FROM scheduled_nodes WHERE id = ?", [id]);
         return result;
     });
 }

@@ -60,7 +60,7 @@ export async function deleteScheduledNodeId(
   db: Database<sqlite3.Database, sqlite3.Statement>,
   id: number
 ) {
-  const result = await db.get("DELETE FROM scheduled_nodes WHERE id = ?", [id]);
+  const result = await db.run("DELETE FROM scheduled_nodes WHERE id = ?", [id]);
   return result;
 }
 
