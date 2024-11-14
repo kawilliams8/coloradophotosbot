@@ -24,6 +24,7 @@
     "cron": "^3.2.1",
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
+    "html-entities": "^2.5.2",
     "path": "^0.12.7",
     "process": "^0.11.10",
     "sharp": "^0.33.5",
