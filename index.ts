@@ -5,7 +5,13 @@ import fs, { PathLike } from "fs";
 import path from "path";
 import { nodeIds } from "./nodeIds.js";
 import { ScrapedData } from "./types";
-import { setupDatabase, savePostedNode, isNodePosted } from "./db_utils.js";
+import {
+  setupDatabase,
+  savePostedNode,
+  isNodePosted,
+  getNextScheduledNodeId,
+  deleteScheduledNodeId,
+} from "./db_utils.js";
 import { scrapeNodePage } from "./archive_utils.js";
 import { processImage } from "./image_utils.js";
 import { composePostText } from "./text_utils.js";
@@ -84,17 +90,17 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
 async function main() {
   const db = await setupDatabase();
 
-  // TODO improve this as list grows
-  const nodeId = nodeIds.shift();
+  // TODO auto populate the scheduled posts table
+  const nodeId = await getNextScheduledNodeId(db);
   if (!nodeId) {
-    // abort! the array is empty
+    // abort! the table is empty
     await db.close();
-    console.log("Node ids list empty, db closed, exiting main");
+    console.log("Scheduled node ids table is empty, db closed, exiting main");
     return;
   }
 
   // Check if the node has already been posted, no duplicates!
-  console.log("Picked a node id from array: ", nodeId);
+  console.log("Picked a node id from table: ", nodeId);
   const alreadyPosted = await isNodePosted(db, nodeId);
 
   if (!alreadyPosted) {
@@ -124,6 +130,7 @@ async function main() {
 
         // Save the node id to db after posting
         await savePostedNode(db, nodeId);
+        await deleteScheduledNodeId(db, nodeId);
       } else {
         console.log("No BSKY credentials?", process.env.BLUESKY_USERNAME);
       }

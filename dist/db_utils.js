@@ -15,11 +15,19 @@ export function setupDatabase() {
             filename: "./nodes.db",
             driver: sqlite3.Database,
         });
+        db.configure("busyTimeout", 5000);
         yield db.exec(`
     CREATE TABLE IF NOT EXISTS posted_nodes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       node_id TEXT UNIQUE,
       post_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+        yield db.exec(`
+    CREATE TABLE IF NOT EXISTS scheduled_nodes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      node_id TEXT UNIQUE,
+      node_description TEXT UNIQUE
     )
   `);
         return db;
@@ -39,6 +47,18 @@ export function savePostedNode(db, nodeId) {
                 console.error("Error saving node id:", error);
             }
         }
+    });
+}
+export function getNextScheduledNodeId(db) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield db.get("SELECT node_id FROM scheduled_nodes ORDER BY id ASC LIMIT 1;");
+        return result.node_id;
+    });
+}
+export function deleteScheduledNodeId(db, id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield db.get("DELETE FROM your_table_name WHERE id = ?", [id]);
+        return result;
     });
 }
 export function isNodePosted(db, nodeId) {

@@ -12,8 +12,7 @@ import * as dotenv from "dotenv";
 import * as process from "process";
 import fs from "fs";
 import path from "path";
-import { nodeIds } from "./nodeIds.js";
-import { setupDatabase, savePostedNode, isNodePosted } from "./db_utils.js";
+import { setupDatabase, savePostedNode, isNodePosted, getNextScheduledNodeId, deleteScheduledNodeId, } from "./db_utils.js";
 import { scrapeNodePage } from "./archive_utils.js";
 import { processImage } from "./image_utils.js";
 import { composePostText } from "./text_utils.js";
@@ -78,13 +77,13 @@ function postToBluesky(resizedPath, scrapedData) {
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const db = yield setupDatabase();
-        const nodeId = nodeIds.shift();
+        const nodeId = yield getNextScheduledNodeId(db);
         if (!nodeId) {
             yield db.close();
-            console.log("Node ids list empty, db closed, exiting main");
+            console.log("Scheduled node ids table is empty, db closed, exiting main");
             return;
         }
-        console.log("Picked a node id from array: ", nodeId);
+        console.log("Picked a node id from table: ", nodeId);
         const alreadyPosted = yield isNodePosted(db, nodeId);
         if (!alreadyPosted) {
             try {
@@ -102,6 +101,7 @@ function main() {
                     scrapedData) {
                     yield postToBluesky(resizedPath, scrapedData);
                     yield savePostedNode(db, nodeId);
+                    yield deleteScheduledNodeId(db, nodeId);
                 }
                 else {
                     console.log("No BSKY credentials?", process.env.BLUESKY_USERNAME);

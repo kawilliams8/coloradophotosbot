@@ -7,13 +7,22 @@ export async function setupDatabase() {
     filename: "./nodes.db",
     driver: sqlite3.Database,
   });
+  db.configure("busyTimeout", 5000);
 
-  // Add table, if needed
+  // Add tables, if needed. Close DB Browser first.
   await db.exec(`
     CREATE TABLE IF NOT EXISTS posted_nodes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       node_id TEXT UNIQUE,
       post_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS scheduled_nodes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      node_id TEXT UNIQUE,
+      node_description TEXT UNIQUE
     )
   `);
 
@@ -36,6 +45,23 @@ export async function savePostedNode(
       console.error("Error saving node id:", error);
     }
   }
+}
+
+export async function getNextScheduledNodeId(
+  db: Database<sqlite3.Database, sqlite3.Statement>
+) {
+  const result = await db.get(
+    "SELECT node_id FROM scheduled_nodes ORDER BY id ASC LIMIT 1;"
+  );
+  return result.node_id;
+}
+
+export async function deleteScheduledNodeId(
+  db: Database<sqlite3.Database, sqlite3.Statement>,
+  id: number
+) {
+  const result = await db.get("DELETE FROM your_table_name WHERE id = ?", [id]);
+  return result;
 }
 
 export async function isNodePosted(
