@@ -42,7 +42,6 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
     encoding: "image/jpeg",
   });
 
-  console.log("image upload response data: ", imageUpload.data);
   if (imageUpload.success) {
     console.log("image uploaded successfully, posting with image next.");
     const text = composePostText(scrapedData);
@@ -147,7 +146,10 @@ async function main() {
       console.error("Failed to post image to Bluesky:", error);
     }
   } else {
-    console.log(`Tried to post a duplicate node id ${node.id}, exiting main.`);
+    await deleteScheduledNodeId(db, node.id);
+    console.log(
+      `Tried to post a duplicate node id ${node.id}, deleted the id. Closing db next.`
+    );
   }
 
   // Close the database connection when done with post
