@@ -1,8 +1,5 @@
 name: Bluesky Post
 on:
-  push:
-    branches:
-      - main
   schedule:
     - cron: "0 14,2 * * *" # In UTC, every 7am and 7pm MTN
 
@@ -46,16 +43,16 @@ jobs:
             git push
           fi
 
-      - name: Check if scheduled_nodes has 6 or fewer items
+      - name: Check if scheduled_nodes has 60 or fewer items
         id: db-check
         run: |
           COUNT=$(sqlite3 nodes.db "SELECT COUNT(*) FROM scheduled_nodes;")
           echo "Rows in scheduled_nodes table: $COUNT"
           if [ "$COUNT" -le 60 ]; then
-            echo "Less than or equal to 6 items remaining in table."
+            echo "Less than or equal to 60 items remaining in table."
             exit 1
           else
-            echo "Table has enough items."
+            echo "Scheduled posts table has over 60 items."
           fi
 
       - name: Send email if count is <= 6
@@ -69,5 +66,5 @@ jobs:
           subject: "Colorado History Photos | scheduled posts running low"
           body: |
             This is an automated message from your GitHub Actions workflow.
-          to: kawilliams8@example.com
-          from: kawilliams8@example.com
+          to: coloradophotosbot@gmail.com
+          from: coloradophotosbot@gmail.com
