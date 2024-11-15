@@ -1,7 +1,7 @@
-name: Scheduled Bot Job
+name: Bluesky Post
 on:
   schedule:
-    - cron: "0 7,19 * * *" # Every 7am and 7pm, so 2 photos per day
+    - cron: "0 14,2 * * *" # In UTC, every 7am and 7pm MTN
 
 jobs:
   run-bot:
