@@ -1,5 +1,8 @@
 name: Bluesky Post
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 14,2 * * *" # In UTC, every 7am and 7pm MTN
 
@@ -43,28 +46,19 @@ jobs:
             git push
           fi
 
-      - name: Check if scheduled_nodes has 60 or fewer items
-        id: db-check
+      - name: Send email if count is <= 60
         run: |
           COUNT=$(sqlite3 nodes.db "SELECT COUNT(*) FROM scheduled_nodes;")
           echo "Rows in scheduled_nodes table: $COUNT"
           if [ "$COUNT" -le 60 ]; then
-            echo "Less than or equal to 60 items remaining in table."
-            exit 1
+          echo "Less than or equal to 60 items remaining in table."
+          # Send email notification using curl
+          curl --url 'smtp://smtp.gmail.com:465' --ssl-reqd \
+          --mail-from "coloradophotosbot@gmail.com" \
+          --mail-rcpt "coloradophotosbot@gmail.com" \
+          --user "${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PW }}" \
+          -T <(echo -e "Subject: Colorado History Photos | scheduled posts running low\n\nThis is an automated message from your GitHub Actions workflow. Less than or equal to 6 items left in the scheduled_posts table.")
           else
-            echo "Scheduled posts table has over 60 items."
+          echo "Scheduled posts table has over 6 items."
           fi
-
-      - name: Send email if count is <= 6
-        if: failure() # Runs only if the previous step fails
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USER }}
-          password: ${{ secrets.EMAIL_PW }}
-          subject: "Colorado History Photos | scheduled posts running low"
-          body: |
-            This is an automated message from your GitHub Actions workflow.
-          to: coloradophotosbot@gmail.com
-          from: coloradophotosbot@gmail.com
+        continue-on-error: true
