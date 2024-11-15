@@ -20,10 +20,18 @@ export async function setupDatabase() {
     )
   `);
 
-  await db.exec(`
+  const columnExists = await db.get(`
+  SELECT 1 
+  FROM pragma_table_info('posted_nodes') 
+  WHERE name = 'node_description'
+`);
+
+  if (!columnExists) {
+    await db.exec(`
     ALTER TABLE posted_nodes
     ADD COLUMN node_description TEXT
     `);
+  }
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS scheduled_nodes (
