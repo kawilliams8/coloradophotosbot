@@ -10,6 +10,7 @@ export async function setupDatabase() {
   db.configure("busyTimeout", 5000);
 
   // Add tables, if needed. Close DB Browser first.
+
   await db.exec(`
     CREATE TABLE IF NOT EXISTS posted_nodes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,6 +18,11 @@ export async function setupDatabase() {
       post_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await db.exec(`
+    ALTER TABLE posted_nodes
+    ADD COLUMN node_description TEXT
+    `);
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS scheduled_nodes (

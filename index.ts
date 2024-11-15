@@ -3,7 +3,6 @@ import * as dotenv from "dotenv";
 import * as process from "process";
 import fs, { PathLike } from "fs";
 import path from "path";
-import { nodeIds } from "./nodeIds.js";
 import { ScrapedData } from "./types";
 import {
   setupDatabase,
