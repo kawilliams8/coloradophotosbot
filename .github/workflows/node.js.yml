@@ -1,4 +1,4 @@
-name: Bluesky Post
+name: Colorado History Photos Bot
 on:
   push:
     branches:
@@ -31,6 +31,13 @@ jobs:
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
         run: npm run start
 
+      - name: Send email if count is <= 6
+        run: |
+          COUNT=$(sqlite3 nodes.db "SELECT COUNT(*) FROM scheduled_nodes;")
+          echo "Rows in scheduled_nodes table: $COUNT"
+          echo "Pull the updates before adding more."
+        continue-on-error: true
+
       - name: Commit and push updated nodes.db
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -45,20 +52,3 @@ jobs:
             git commit -m "Add new ID from bot run"
             git push
           fi
-
-      - name: Send email if count is <= 60
-        run: |
-          COUNT=$(sqlite3 nodes.db "SELECT COUNT(*) FROM scheduled_nodes;")
-          echo "Rows in scheduled_nodes table: $COUNT"
-          if [ "$COUNT" -le 60 ]; then
-          echo "Less than or equal to 60 items remaining in table."
-          # Send email notification using curl
-          curl --url 'smtp://smtp.gmail.com:465' --ssl-reqd \
-          --mail-from "coloradophotosbot@gmail.com" \
-          --mail-rcpt "coloradophotosbot@gmail.com" \
-          --user "${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PW }}" \
-          -T <(echo -e "Subject: Colorado History Photos | scheduled posts running low\n\nThis is an automated message from your GitHub Actions workflow. Less than or equal to 6 items left in the scheduled_posts table.")
-          else
-          echo "Scheduled posts table has over 6 items."
-          fi
-        continue-on-error: true
