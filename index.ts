@@ -1,4 +1,4 @@
-import { BskyAgent } from "@atproto/api";
+import { BskyAgent, RichText } from "@atproto/api";
 import * as dotenv from "dotenv";
 import * as process from "process";
 import fs, { PathLike } from "fs";
@@ -68,8 +68,13 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
 
     // Conditionally reply to the image with the full node URL
     if (scrapedData.nodeUrl.length) {
-      await agent.post({
+      const rt = new RichText({
         text: "DPL Archive post: " + scrapedData.nodeUrl,
+      });
+      await rt.detectFacets(agent); // automatically detects mentions and links
+      await agent.post({
+        text: rt.text,
+        facets: rt.facets,
         reply: {
           root: {
             uri: result.uri,
