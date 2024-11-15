@@ -1,8 +1,5 @@
 name: Colorado History Photos Bot
 on:
-  push:
-    branches:
-      - main
   schedule:
     - cron: "0 14,2 * * *" # In UTC, every 7am and 7pm MTN
 
@@ -31,7 +28,7 @@ jobs:
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
         run: npm run start
 
-      - name: Send email if count is <= 6
+      - name: Log scheduled posts count
         run: |
           COUNT=$(sqlite3 nodes.db "SELECT COUNT(*) FROM scheduled_nodes;")
           echo "Rows in scheduled_nodes table: $COUNT"
