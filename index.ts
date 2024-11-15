@@ -8,7 +8,7 @@ import {
   setupDatabase,
   savePostedNode,
   isNodePosted,
-  getNextScheduledNodeId,
+  getNextScheduledNode,
   deleteScheduledNodeId,
 } from "./db_utils.js";
 import { scrapeNodePage } from "./archive_utils.js";
@@ -90,22 +90,24 @@ async function main() {
   const db = await setupDatabase();
 
   // TODO auto populate the scheduled posts table
-  const nodeId = await getNextScheduledNodeId(db);
-  if (!nodeId) {
+  const node = await getNextScheduledNode(db);
+  if (!node) {
     // abort! the table is empty
     await db.close();
-    console.log("Scheduled node ids table is empty, db closed, exiting main");
+    console.log(
+      "Scheduled node ids table is empty or broken, db closed, exiting main"
+    );
     return;
   }
 
   // Check if the node has already been posted, no duplicates!
-  console.log("Picked a node id from table: ", nodeId);
-  const alreadyPosted = await isNodePosted(db, nodeId);
+  console.log("Picked a node id from table: ", node.id);
+  const alreadyPosted = await isNodePosted(db, node.id);
 
   if (!alreadyPosted) {
     try {
       // Scrape data from node view
-      const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${nodeId}`;
+      const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${node.id}`;
       const scrapedData = await scrapeNodePage(nodeUrl);
       if (!scrapedData) {
         console.log("Scraping failed. Exiting main.");
@@ -128,8 +130,8 @@ async function main() {
         await postToBluesky(resizedPath, scrapedData);
 
         // Save the node id to db after posting
-        await savePostedNode(db, nodeId);
-        await deleteScheduledNodeId(db, nodeId);
+        await savePostedNode(db, node.id, node.description);
+        await deleteScheduledNodeId(db, node.id);
       } else {
         console.log("No BSKY credentials?", process.env.BLUESKY_USERNAME);
       }
@@ -140,7 +142,7 @@ async function main() {
       console.error("Failed to post image to Bluesky:", error);
     }
   } else {
-    console.log(`Tried to post a duplicate node id ${nodeId}, exiting main.`);
+    console.log(`Tried to post a duplicate node id ${node.id}, exiting main.`);
   }
 
   // Close the database connection when done with post

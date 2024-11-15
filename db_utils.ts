@@ -1,5 +1,6 @@
 import sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
+import { ScheduledNode } from "./types";
 
 // Open or create an SQLite database file to track used archive nodes
 export async function setupDatabase() {
@@ -37,10 +38,15 @@ export async function setupDatabase() {
 
 export async function savePostedNode(
   db: Database<sqlite3.Database, sqlite3.Statement>,
-  nodeId: number
+  nodeId: number,
+  nodeDescription: string
 ) {
   try {
-    await db.run("INSERT INTO posted_nodes (node_id) VALUES (?)", nodeId);
+    await db.run(
+      "INSERT INTO posted_nodes (node_id, node_description) VALUES (?, ?)",
+      nodeId,
+      nodeDescription
+    );
     console.log(`Node id ${nodeId} saved to the posted nodes table.`);
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT") {
@@ -53,13 +59,18 @@ export async function savePostedNode(
   }
 }
 
-export async function getNextScheduledNodeId(
+export async function getNextScheduledNode(
   db: Database<sqlite3.Database, sqlite3.Statement>
-) {
+): Promise<ScheduledNode | null> {
   const result = await db.get(
-    "SELECT node_id FROM scheduled_nodes ORDER BY id ASC LIMIT 1;"
+    "SELECT node_id, node_description FROM scheduled_nodes ORDER BY id ASC LIMIT 1;"
   );
-  return result.node_id;
+  return result
+    ? {
+        id: result.node_id, // Reformatting to camel case
+        description: result.node_description,
+      }
+    : null;
 }
 
 export async function deleteScheduledNodeId(

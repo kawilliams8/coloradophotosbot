@@ -6,3 +6,8 @@ export interface ScrapedData {
   altSummary: string;
   nodeUrl: string;
 }
+
+export interface ScheduledNode {
+  id: number;
+  description: string;
+}
