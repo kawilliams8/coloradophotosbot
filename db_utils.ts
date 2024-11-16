@@ -70,15 +70,34 @@ export async function savePostedNode(
 export async function getNextScheduledNode(
   db: Database<sqlite3.Database, sqlite3.Statement>
 ): Promise<ScheduledNode | null> {
-  const result = await db.get(
-    "SELECT node_id, node_description FROM scheduled_nodes ORDER BY id ASC LIMIT 1;"
-  );
-  return result
-    ? {
+  let result;
+
+  while (true) {
+    result = await db.get(
+      "SELECT node_id, node_description FROM scheduled_nodes ORDER BY id ASC LIMIT 1;"
+    );
+
+    if (!result) {
+      console.log("Scheduled posts table is empty");
+      return null;
+    }
+
+    const alreadyPosted = await isNodePosted(db, result.node_id);
+
+    if (!alreadyPosted) {
+      console.log("Picked a node from scheduled table: ", result.node_id);
+      return {
         id: result.node_id, // Reformatting to camel case
         description: result.node_description,
-      }
-    : null;
+      };
+    } else {
+      // Remove the already posted node and continue the loop
+      console.log(
+        `Node ${result.node_id} is already posted. Removing from table.`
+      );
+      await deleteScheduledNodeId(db, result.node_id);
+    }
+  }
 }
 
 export async function deleteScheduledNodeId(

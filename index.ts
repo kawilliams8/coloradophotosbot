@@ -104,52 +104,41 @@ async function main() {
     return;
   }
 
-  // Check if the node has already been posted, no duplicates!
-  console.log("Picked a node id from table: ", node.id);
-  const alreadyPosted = await isNodePosted(db, node.id);
-
-  if (!alreadyPosted) {
-    try {
-      // Scrape data from node view
-      const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${node.id}`;
-      const scrapedData = await scrapeNodePage(nodeUrl);
-      if (!scrapedData) {
-        console.log("Scraping failed. Exiting main.");
-        return;
-      }
-
-      // Temporary location for downloaded image
-      const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
-
-      // Temporary location for resized image
-      const resizedPath = await processImage(scrapedData.imageUrl, __dirname);
-
-      if (
-        process.env.BLUESKY_USERNAME &&
-        process.env.BLUESKY_PASSWORD &&
-        resizedPath &&
-        scrapedData
-      ) {
-        // Create the post and reply on Bluesky
-        await postToBluesky(resizedPath, scrapedData);
-
-        // Save the node id to db after posting
-        await savePostedNode(db, node.id, node.description);
-        await deleteScheduledNodeId(db, node.id);
-      } else {
-        console.log("No BSKY credentials?", process.env.BLUESKY_USERNAME);
-      }
-
-      // Clean up the downloaded image after posting
-      fs.unlinkSync(imagePath);
-    } catch (error) {
-      console.error("Failed to post image to Bluesky:", error);
+  try {
+    // Scrape data from node view
+    const nodeUrl = `https://digital.denverlibrary.org/nodes/view/${node.id}`;
+    const scrapedData = await scrapeNodePage(nodeUrl);
+    if (!scrapedData) {
+      console.log("Scraping failed. Exiting main.");
+      return;
     }
-  } else {
-    await deleteScheduledNodeId(db, node.id);
-    console.log(
-      `Tried to post a duplicate node id ${node.id}, deleted the id. Closing db next.`
-    );
+
+    // Temporary location for downloaded image
+    const imagePath = path.resolve(__dirname, "downloaded_image.jpg");
+
+    // Temporary location for resized image
+    const resizedPath = await processImage(scrapedData.imageUrl, __dirname);
+
+    if (
+      process.env.BLUESKY_USERNAME &&
+      process.env.BLUESKY_PASSWORD &&
+      resizedPath &&
+      scrapedData
+    ) {
+      // Create the post and reply on Bluesky
+      await postToBluesky(resizedPath, scrapedData);
+
+      // Save the node id to db after posting, delete from scheduled table
+      await savePostedNode(db, node.id, node.description);
+      await deleteScheduledNodeId(db, node.id);
+    } else {
+      console.log("No BSKY credentials?", process.env.BLUESKY_USERNAME);
+    }
+
+    // Clean up the downloaded image after posting
+    fs.unlinkSync(imagePath);
+  } catch (error) {
+    console.error("Failed to post image to Bluesky:", error);
   }
 
   // Close the database connection when done with post
