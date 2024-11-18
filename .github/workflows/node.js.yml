@@ -1,7 +1,7 @@
 name: Colorado History Photos Bot
 on:
   schedule:
-    - cron: "0 14,2 * * *" # In UTC, every 7am and 7pm MTN (ish).
+    - cron: "15 14,2 * * *" # In UTC, every 7:15am and 7:15pm MTN (ish).
 
 jobs:
   run-bot:
