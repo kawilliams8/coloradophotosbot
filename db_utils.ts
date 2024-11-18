@@ -10,8 +10,7 @@ export async function setupDatabase() {
   });
   db.configure("busyTimeout", 5000);
 
-  // Add tables, if needed. Close DB Browser first.
-
+  // Add tables, if needed. Close db tools if locked error.
   await db.exec(`
     CREATE TABLE IF NOT EXISTS posted_nodes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,19 +19,6 @@ export async function setupDatabase() {
     )
   `);
 
-  const columnExists = await db.get(`
-  SELECT 1 
-  FROM pragma_table_info('posted_nodes') 
-  WHERE name = 'node_description'
-`);
-
-  if (!columnExists) {
-    await db.exec(`
-    ALTER TABLE posted_nodes
-    ADD COLUMN node_description TEXT
-    `);
-  }
-
   await db.exec(`
     CREATE TABLE IF NOT EXISTS scheduled_nodes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +26,34 @@ export async function setupDatabase() {
       node_description TEXT UNIQUE
     )
   `);
+
+  // "Migration 1" Store the photo description once it's been posted, for readability.
+  const descExists = await db.get(`
+    SELECT 1
+    FROM pragma_table_info('posted_nodes')
+    WHERE name = 'node_description'
+  `);
+
+  if (!descExists) {
+    await db.exec(`
+      ALTER TABLE posted_nodes
+      ADD COLUMN node_description TEXT
+      `);
+  }
+
+  // "Migration 2" Add a date to the scheduled posts to help plan for holidays.
+  const postDateExists = await db.get(`
+    SELECT 1
+    FROM pragma_table_info('scheduled_nodes')
+    WHERE name = 'post_date'
+  `);
+
+  if (!postDateExists) {
+    await db.exec(`
+      ALTER TABLE scheduled_nodes
+      ADD COLUMN post_date TEXT
+      `);
+  }
 
   return db;
 }
@@ -121,4 +135,34 @@ export async function isNodePosted(
     nodeId
   );
   return !!result; // true if found
+}
+
+export async function addDatesToScheduledPostsTable(
+  db: Database<sqlite3.Database, sqlite3.Statement>
+) {
+  try {
+    const rows = await db.all(
+      "SELECT id FROM scheduled_nodes WHERE post_date IS NULL ORDER BY id ASC"
+    );
+
+    let date = new Date("2025-01-21"); // Start with the next needed date
+    for (let i = 0; i < rows.length; i += 2) {
+      // Updating in pairs only, good enough!
+      const dateString = date.toISOString().split("T")[0]; // YYYY-MM-DD
+      const rowsPair = rows.slice(i, i + 2).map((row) => row.id); // Get next pair of IDs
+      rowsPair.forEach((rowId, i) => {
+        db.run("UPDATE scheduled_nodes SET post_date = ? WHERE id = ?", [
+          dateString + `-${i + 1}`,
+          rowId,
+        ]);
+      });
+
+      // Increment date by one day for the next pair
+      date.setDate(date.getDate() + 1);
+    }
+
+    console.log("Dates updated successfully.");
+  } catch (error) {
+    console.error("Error updating dates:", error);
+  }
 }
