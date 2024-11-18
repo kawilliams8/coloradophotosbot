@@ -1,8 +1,8 @@
 name: Colorado History Photos Bot
 on:
-  push:
-    branches:
-      - "main"
+  # push:
+  #   branches:
+  #     - "main"
   schedule:
     - cron: "10 13,1 * * *" # In UTC, every 6:10am and 6:10pm MTN (ish).
 
