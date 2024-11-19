@@ -18,8 +18,8 @@ export function composePostText({
   const text =
     truncate(decode(title), 50) +
     dateSeparator +
-    (truncate(decode(summary), 245 - dateSeparator.length) ??
-      truncate(decode(altSummary), 245 - dateSeparator.length));
+    (truncate(decode(summary), 240 - dateSeparator.length) ??
+      truncate(decode(altSummary), 240 - dateSeparator.length));
   console.log("Composed post text: ", text);
   return text;
 }
