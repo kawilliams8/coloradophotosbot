@@ -9,6 +9,8 @@ export async function setupDatabase() {
     driver: sqlite3.Database,
   });
   db.configure("busyTimeout", 5000);
+  // await removeDatesFromScheduledPostsTable(db);
+  // await addDatesToScheduledPostsTable(db);
 
   // Add tables, if needed. Close db tools if locked error.
   await db.exec(`
@@ -137,6 +139,17 @@ export async function isNodePosted(
   return !!result; // true if found
 }
 
+export async function removeDatesFromScheduledPostsTable(
+  db: Database<sqlite3.Database, sqlite3.Statement>
+) {
+  try {
+    await db.run("UPDATE scheduled_nodes SET post_date = NULL");
+    console.log("Dates removed successfully.");
+  } catch (error) {
+    console.error("Error removing dates:", error);
+  }
+}
+
 export async function addDatesToScheduledPostsTable(
   db: Database<sqlite3.Database, sqlite3.Statement>
 ) {
@@ -145,7 +158,7 @@ export async function addDatesToScheduledPostsTable(
       "SELECT id FROM scheduled_nodes WHERE post_date IS NULL ORDER BY id ASC"
     );
 
-    let date = new Date("2025-01-21"); // Start with the next needed date
+    let date = new Date("2024-12-8"); // Start with the next needed date
     for (let i = 0; i < rows.length; i += 2) {
       // Updating in pairs only, good enough!
       const dateString = date.toISOString().split("T")[0]; // YYYY-MM-DD
