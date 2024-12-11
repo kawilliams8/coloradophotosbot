@@ -14,12 +14,12 @@ export function composePostText({
   // Node title | Node date | Node summary
   // Max 300 chars
   // "Last bivouac at Camp Hale... | 1940-1945 | 10th Mountain Division soldiers rest..."
-  const dateSeparator = ` | ${imageDate} | `; // image date is a varied string, might be long
+  const dateSeparator = ` | ${imageDate && imageDate + " | "}`; // image date is a varied string, might be long
   const text =
     truncate(decode(title), 50) +
     dateSeparator +
     (truncate(decode(summary), 240 - dateSeparator.length) ??
       truncate(decode(altSummary), 240 - dateSeparator.length));
-  console.log("Composed post text: ", text);
+  // console.log("Composed post text: ", text);
   return text;
 }
