@@ -7,7 +7,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsc && node --test"
+    "test": "tsc && node --test",
+    "cleardates": "tsc && node dist/db_clear_dates.js",
+    "adddates": "tsc && node dist/db_add_dates.js",
+    "switchrows": "tsc && node dist/db_switch_rows.js"
   },
   "keywords": [
     "Colorado",
