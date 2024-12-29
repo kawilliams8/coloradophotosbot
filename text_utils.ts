@@ -1,11 +1,9 @@
 import { ScrapedData } from "./types";
-import { decode } from "html-entities";
+import * as dotenv from "dotenv";
+import * as process from "process";
+import OpenAI from "openai";
 
-export function truncate(text: string, maxChars: number) {
-  return text.length > maxChars ? text.slice(0, maxChars) + "... " : text;
-}
-
-export function composePostText({
+export async function composePostText({
   title,
   imageDate,
   summary,
@@ -13,13 +11,35 @@ export function composePostText({
 }: ScrapedData) {
   // Node title | Node date | Node summary
   // Max 300 chars
-  // "Last bivouac at Camp Hale... | 1940-1945 | 10th Mountain Division soldiers rest..."
-  const dateSeparator = ` | ${imageDate && imageDate + " | "}`; // image date is a varied string, might be long
-  const text =
-    truncate(decode(title), 50) +
-    dateSeparator +
-    (truncate(decode(summary), 240 - dateSeparator.length) ??
-      truncate(decode(altSummary), 240 - dateSeparator.length));
-  // console.log("Composed post text: ", text);
-  return text;
+  // "Last bivouac at Camp Hale | 1940-1945 | 10th Mountain Division soldiers rest"
+  dotenv.config();
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return;
+    }
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      store: false,
+      messages: [
+        {
+          role: "user",
+          content:
+            "compress the following info to no more than 295 characters and structure it as a very brief title without punctuation, then a vertical bar, the date (if provided, or 'Undated'), then a vertical bar, then as much remaining detail as you can fit.: " +
+            title +
+            imageDate +
+            summary +
+            altSummary,
+        },
+      ],
+    });
+    return completion.choices[0].message.content;
+  } catch (error) {
+    console.error("Error from OpenAI or composePostText:", error);
+    return "";
+  }
 }

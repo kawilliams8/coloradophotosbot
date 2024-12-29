@@ -7,7 +7,6 @@ import { ScrapedData } from "./types";
 import {
   setupDatabase,
   savePostedNode,
-  isNodePosted,
   getNextScheduledNode,
   deleteScheduledNodeId,
 } from "./db_utils.js";
@@ -44,48 +43,50 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
 
   if (imageUpload.success) {
     console.log("image uploaded successfully, posting with image next.");
-    const text = composePostText(scrapedData);
+    const text = await composePostText(scrapedData);
 
     // Post with the uploaded image, text and alt text
-    const result = await agent.post({
-      text,
-      embed: {
-        $type: "app.bsky.embed.images",
-        images: [
-          {
-            image: imageUpload.data.blob,
-            alt: text,
-          },
-        ],
-      },
-    });
-
-    console.log("Posted successfully, posting reply with Node url next.");
-    process.stdout.write("\u0007"); // meep meep meep! local only :(
-    process.stdout.write("\u0007");
-    process.stdout.write("\u0007");
-
-    // Conditionally reply to the image with the full node URL
-    if (scrapedData.nodeUrl.length) {
-      const rt = new RichText({
-        text: "DPL Archive post: " + scrapedData.nodeUrl,
-      });
-      await rt.detectFacets(agent); // automatically detects mentions and links
-      await agent.post({
-        text: rt.text,
-        facets: rt.facets,
-        reply: {
-          root: {
-            uri: result.uri,
-            cid: result.cid,
-          },
-          parent: {
-            uri: result.uri,
-            cid: result.cid,
-          },
+    if (text) {
+      const result = await agent.post({
+        text,
+        embed: {
+          $type: "app.bsky.embed.images",
+          images: [
+            {
+              image: imageUpload.data.blob,
+              alt: text,
+            },
+          ],
         },
-        createdAt: new Date().toISOString(),
       });
+
+      console.log("Posted successfully, posting reply with Node url next.");
+      process.stdout.write("\u0007"); // meep meep meep! local only :(
+      process.stdout.write("\u0007");
+      process.stdout.write("\u0007");
+
+      // Conditionally reply to the image with the full node URL
+      if (scrapedData.nodeUrl.length) {
+        const rt = new RichText({
+          text: "DPL Archive post: " + scrapedData.nodeUrl,
+        });
+        await rt.detectFacets(agent); // automatically detects mentions and links
+        await agent.post({
+          text: rt.text,
+          facets: rt.facets,
+          reply: {
+            root: {
+              uri: result.uri,
+              cid: result.cid,
+            },
+            parent: {
+              uri: result.uri,
+              cid: result.cid,
+            },
+          },
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
   }
 }

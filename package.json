@@ -10,7 +10,8 @@
     "test": "tsc && node --test",
     "cleardates": "tsc && node dist/db_clear_dates.js",
     "adddates": "tsc && node dist/db_add_dates.js",
-    "switchrows": "tsc && node dist/db_switch_rows.js"
+    "switchrows": "tsc && node dist/db_switch_rows.js",
+    "api": "tsc && node dist/text_utils.js"
   },
   "keywords": [
     "Colorado",
@@ -29,6 +30,7 @@
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
     "html-entities": "^2.5.2",
+    "openai": "^4.77.0",
     "path": "^0.12.7",
     "process": "^0.11.10",
     "sharp": "^0.33.5",
@@ -36,7 +38,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "@types/node": "^22.9.0",
+    "@types/node": "^22.10.2",
     "typescript": "^5.6.3"
   }
 }
