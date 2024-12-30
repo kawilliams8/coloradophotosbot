@@ -30,8 +30,8 @@ export async function composePostText({
         {
           role: "user",
           content: `
-            Compress the following info to no more than 295 characters, structured as:
-            - A brief title without punctuation, around 40 characters
+            Compress the following info to no more than 295 characters, with no line breaks, structured as:
+            - A brief title without punctuation, around 35 characters
             - A vertical bar
             - The date of the image (if provided, or 'Undated')
             - Another vertical bar

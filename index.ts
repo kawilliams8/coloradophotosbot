@@ -74,7 +74,7 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
           text:
             "DPL Archive post: " +
             scrapedData.nodeUrl +
-            " " +
+            " #Colorado " +
             tags[0] +
             " " +
             tags[1],
