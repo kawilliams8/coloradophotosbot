@@ -16,6 +16,7 @@ export async function composePostText({
 
   try {
     if (!process.env.OPENAI_API_KEY) {
+      console.log("No OpenAI API Key");
       return;
     }
     const openai = new OpenAI({
@@ -37,6 +38,7 @@ export async function composePostText({
         },
       ],
     });
+    console.log("OpenAI result: ", completion.choices[0].message.content);
     return completion.choices[0].message.content;
   } catch (error) {
     console.error("Error from OpenAI or composePostText:", error);
