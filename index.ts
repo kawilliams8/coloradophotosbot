@@ -43,10 +43,11 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
 
   if (imageUpload.success) {
     console.log("image uploaded successfully, posting with image next.");
-    const text = await composePostText(scrapedData);
+    const response = await composePostText(scrapedData);
 
     // Post with the uploaded image, text and alt text
-    if (text) {
+    if (response) {
+      const { text } = response;
       const result = await agent.post({
         text,
         embed: {
