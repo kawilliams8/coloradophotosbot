@@ -47,7 +47,7 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
 
     // Post with the uploaded image, text and alt text
     if (response) {
-      const { text } = response;
+      const { text, tags } = response;
       const result = await agent.post({
         text,
         embed: {
@@ -61,6 +61,8 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
         },
       });
 
+      console.log("extracted tags: ", tags);
+
       console.log("Posted successfully, posting reply with Node url next.");
       process.stdout.write("\u0007"); // meep meep meep! local only :(
       process.stdout.write("\u0007");
@@ -69,7 +71,13 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
       // Conditionally reply to the image with the full node URL
       if (scrapedData.nodeUrl.length) {
         const rt = new RichText({
-          text: "DPL Archive post: " + scrapedData.nodeUrl,
+          text:
+            "DPL Archive post: " +
+            scrapedData.nodeUrl +
+            " " +
+            tags[0] +
+            " " +
+            tags[1],
         });
         await rt.detectFacets(agent); // automatically detects mentions and links
         await agent.post({
