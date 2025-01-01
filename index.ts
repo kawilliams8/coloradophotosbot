@@ -72,12 +72,11 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
       if (scrapedData.nodeUrl.length) {
         const rt = new RichText({
           text:
+            "#Colorado " +
+            tags[0] + " " +
+            tags[1] + "\n" +
             "DPL Archive post: " +
             scrapedData.nodeUrl +
-            " #Colorado " +
-            tags[0] +
-            " " +
-            tags[1],
         });
         await rt.detectFacets(agent); // automatically detects mentions and links
         await agent.post({

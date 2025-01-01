@@ -38,8 +38,8 @@ export async function composePostText({
             - Any remaining details, but without repetition and no offensive language.
             ${title} ${imageDate} ${summary} ${altSummary}
             Next, remove any line or paragraph breaks. We want it to flow without breaking to the next line.
-            Next, extract and append two brief and inoffensive social media friendly hashtags relevant
-            to the content at the end, such as a city or what is visible (e.g., #ColoradoSprings, #railroad).
+            Next, extract and append two simple and inoffensive social media friendly hashtags relevant
+            to the content at the end, such as a city, decade, or what is visible (e.g., #ColoradoSprings, #1890s, #mountains).
             These tags do not count towards the 295 characters and should not include "#Colorado".
             `,
         },
