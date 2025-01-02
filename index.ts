@@ -76,7 +76,7 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
             tags[0] + " " +
             tags[1] + " " +
             "DPL Archive post: " +
-            scrapedData.nodeUrl +
+            scrapedData.nodeUrl
         });
         await rt.detectFacets(agent); // automatically detects mentions and links
         await agent.post({
