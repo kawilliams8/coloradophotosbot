@@ -1,21 +1,9 @@
 import { describe, it } from "node:test";
 import { strict as assert } from "node:assert";
-import { truncate, composePostText } from "./dist/text_utils.js";
+import { composePostText } from "./dist/text_utils.js";
 
 describe("Utility functions", () => {
   describe("Text utils", () => {
-    it("should properly truncate a long string", () => {
-      const result = truncate("My very long string here", 10);
-      const expected = "My very lo... ";
-      assert.strictEqual(result, expected);
-    });
-
-    it("should not truncate a short string", () => {
-      const result = truncate("My short string", 50);
-      const expected = "My short string";
-      assert.strictEqual(result, expected);
-    });
-
     it("should make post text properly", () => {
       const title = "A very, super, ultra long title text for the test photo";
       const imageDate = "1900 - 1910";
