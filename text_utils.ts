@@ -33,6 +33,7 @@ export async function composePostText({
             Compress the following info to no more than 290 characters, structured as:
             - A title, roughly 15 to 20 characters. Do not include a date or punctuation.
             - A vertical bar
+            - The date, if given. If a date is included, follow it by a vertical bar.
             - Any remaining details, with no repetition and no offensive language.
             - No third or further vertical bar characters.
             ${title} ${imageDate} ${summary} ${altSummary}
