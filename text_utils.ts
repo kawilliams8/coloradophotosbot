@@ -33,14 +33,13 @@ export async function composePostText({
             Compress the following info to no more than 290 characters, structured as:
             - A title, roughly 15 to 20 characters. Do not include a date or punctuation.
             - A vertical bar
-            - The date, if known. If a date is included, follow it by a vertical bar.
             - Any remaining details, with no repetition and no offensive language.
             - No third or further vertical bar characters.
             ${title} ${imageDate} ${summary} ${altSummary}
             Next, remove any line or paragraph breaks. We want the information to flow without breaking to the next line.
             Next, extract and append two short and inoffensive social media friendly hashtags to the end. They must be relevant
             to the content, such as a city (no state), decade, or what is visible (e.g., #ColoradoSprings, #1890s, #mountains).
-            These tags do not count towards the 295 characters and must not include "#Colorado".
+            These tags do not count towards the 290 characters and must not include "#Colorado".
             `,
         },
       ],
