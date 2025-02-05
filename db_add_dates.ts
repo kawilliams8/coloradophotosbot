@@ -11,7 +11,7 @@ async function addDatesToScheduledPostsTable() {
       "SELECT id FROM scheduled_nodes WHERE post_date IS NULL ORDER BY id ASC"
     );
 
-    let date = new Date("2025-01-27"); // Start with the next needed date
+    let date = new Date("2025-02-06"); // Start with the next needed date
     for (let i = 0; i < rows.length; i += 2) {
       // Updating in pairs only, good enough!
       const dateString = date.toISOString().split("T")[0]; // YYYY-MM-DD
