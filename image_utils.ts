@@ -14,6 +14,7 @@ export async function downloadImage(
   url: string | undefined,
   outputPath: PathLike
 ) {
+  if (!url) throw new Error("Invalid image URL provided. Cannot download.");
   const response = await axios({
     url,
     responseType: "stream",
@@ -21,7 +22,10 @@ export async function downloadImage(
   return new Promise((resolve, reject) => {
     const writer = fs.createWriteStream(outputPath);
     response.data.pipe(writer);
-    writer.on("finish", resolve);
+    writer.on("finish", () => {
+      writer.close();
+      resolve(outputPath);
+    });
     writer.on("error", reject);
   });
 }

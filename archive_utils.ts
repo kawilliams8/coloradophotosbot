@@ -22,7 +22,7 @@ export async function scrapeNodePage(
         })
         .parent()
         .text()
-        .slice(4) ?? ""; // Strip off "Date"
+        .replace(/^Date\s*/, "") ?? ""; // Strip off "Date"
 
     const summary =
       $(".titlelabel")
@@ -31,7 +31,7 @@ export async function scrapeNodePage(
         })
         .parent()
         .text()
-        .slice(7) ?? ""; // Strip off "Summary"
+        .replace(/^Summary\s*/, "") ?? ""; // Strip off "Summary"
 
     const altSummary =
       $(".titlelabel")
@@ -39,7 +39,8 @@ export async function scrapeNodePage(
           return $(this).text().trim() === "Alternate Title";
         })
         .parent()
-        .text() ?? "";
+        .text()
+        .replace(/^Alternate Title\s*/, "") ?? ""; // Strip off "Alternate Title"
 
     return { title, imageUrl, imageDate, summary, altSummary, nodeUrl };
   } catch (error) {

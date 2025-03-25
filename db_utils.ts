@@ -2,10 +2,12 @@ import sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
 import { ScheduledNode } from "./types";
 
+const DB_PATH = "./nodes.db";
+
 // Open or create an SQLite database file to track used archive nodes
-export async function setupDatabase() {
+export async function setupDatabase(): Promise<Database> {
   const db = await open({
-    filename: "./nodes.db",
+    filename: DB_PATH,
     driver: sqlite3.Database,
   });
   db.configure("busyTimeout", 5000);

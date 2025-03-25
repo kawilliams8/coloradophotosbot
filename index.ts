@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import * as process from "process";
 import fs, { PathLike } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { ScrapedData } from "./types";
 import {
   setupDatabase,
@@ -13,7 +14,6 @@ import {
 import { scrapeNodePage } from "./archive_utils.js";
 import { processImage } from "./image_utils.js";
 import { composePostText } from "./text_utils.js";
-import { fileURLToPath } from "url";
 
 // Get the current file path and directory path for temporary image storage
 export const __filename = fileURLToPath(import.meta.url);
@@ -29,7 +29,9 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
 
   // login
   if (!process.env.BLUESKY_USERNAME || !process.env.BLUESKY_PASSWORD) {
-    return;
+    throw new Error(
+      "Missing credentials. Set BLUESKY_USERNAME and BLUESKY_PASSWORD."
+    );
   }
   await agent.login({
     identifier: process.env.BLUESKY_USERNAME,

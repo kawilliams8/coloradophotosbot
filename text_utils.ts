@@ -30,16 +30,17 @@ export async function composePostText({
         {
           role: "user",
           content: `
-            Structure this historical information for a photo description with two or three parts. The format will look like: title | date | details
-            - 1. A title of roughly 15 to 20 characters. Do not include a date or any punctuation in this part.
-            - 2. Optionally, the date, if given. If a date is known, precede and follow it by a vertical bar for separation. Otherwise only use one bar for separation.
-            - 3. The third part is any remaining details, with no information or word repetition and no offensive language.
+            Structure this historical information for a photo description with two or three parts and no more than 290 total characters.
+              The format will be one of two versions: title | date | details OR title | details.
+            - 1. A title of roughly 15 characters. Do not include a date or any punctuation in this part.
+            - 2. The provided date goes in part two. If a date is known, precede and follow it with vertical bars for separation. If there is no known date, only show one vertical bar.
+            - 3. The third part will be any remaining details, with no repetition and no offensive language. Use simple sentence structure.
             Here is the information to use:
             ${title} ${imageDate} ${summary} ${altSummary}
 
-            Now, remove any line or paragraph breaking characters, or extraneous punctuation
+            Now, remove any line breaks or paragraph breaking characters. Remove extraneous punctuation such as a double vertical bar without a date between.
             Next, extract and append two short social media friendly hashtags to the end. They must be relevant
-            to the content, such as a city (no state), year, decade, or what is being described in the text (e.g., #ColoradoSprings, #1890s, #mountains).
+            to the content, such as a city (no state), county, year, decade, or what is being described in the text (e.g., #ColoradoSprings, #1890s, #mountains).
             These tags do not count towards the 290 characters and must not include "#Colorado".
             `,
         },
