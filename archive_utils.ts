@@ -45,5 +45,6 @@ export async function scrapeNodePage(
     return { title, imageUrl, imageDate, summary, altSummary, nodeUrl };
   } catch (error) {
     console.error("Error scraping the page:", error);
+    return undefined;
   }
 }

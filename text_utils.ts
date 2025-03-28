@@ -30,11 +30,11 @@ export async function composePostText({
         {
           role: "user",
           content: `
-            Structure this historical information for a photo description with two or three parts and no more than 290 total characters.
-              The format will be one of two versions: title | date | details OR title | details.
+            Structure this historical information for a photo description with no more than 290 total characters.
+              The text format must be one of two versions: title | date | details OR title | details.
             - 1. A title of roughly 15 characters. Do not include a date or any punctuation in this part.
-            - 2. The provided date goes in part two. If a date is known, precede and follow it with vertical bars for separation. If there is no known date, only show one vertical bar.
-            - 3. The third part will be any remaining details, with no repetition and no offensive language. Use simple sentence structure.
+            - 2. A date goes in second part. Use the text format appropriate for if there is a date or not.
+            - 3. The third part will be any remaining details, with no repetition and no offensive language.
             Here is the information to use:
             ${title} ${imageDate} ${summary} ${altSummary}
 
