@@ -49,7 +49,8 @@ export async function composePostText({
         },
       ],
     });
-    console.log("Claude result: ", message.content[0].text);
+    console.log("Claude response message: ", message);
+    // @ts-ignore
     const fullText = message.content[0].text || "";
 
     const hashtagRegex = /#\w+/g;
