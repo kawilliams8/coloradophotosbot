@@ -49,12 +49,12 @@ export async function composePostText({
         },
       ],
     });
-    console.log("Claude result: ", message);
-    const fullText = message || "";
+    console.log("Claude result: ", message.content[0].text);
+    const fullText = message.content[0].text || "";
 
     const hashtagRegex = /#\w+/g;
-    const tags = fullText.toString().match(hashtagRegex) || [];
-    const text = fullText.toString().replace(hashtagRegex, "").trim();
+    const tags = fullText.match(hashtagRegex) || [];
+    const text = fullText.replace(hashtagRegex, "").trim();
 
     return { text, tags };
   } catch (error) {
