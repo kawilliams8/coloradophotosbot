@@ -11,7 +11,7 @@ This project aims to share historical images of Colorado in an engaging, structu
 ## Features
 
 - **Web Scraping**: Extracts metadata, including titles, dates, and summaries, from the digital archive.
-- **AI-Powered Text Composition**: Uses OpenAI's GPT-4 to generate formatted captions with hashtags.
+- **AI-Powered Text Composition**: Uses Claude 3.7 Sonnet to generate formatted captions with hashtags.
 - **Automated Posting**: Publishes posts to Bluesky at scheduled intervals via GitHub Action.
 - **Accessibility Support**: Uses alt text to improve usability for visually impaired users.
 - **Error Handling & Logging**: Ensures reliable operation with robust error handling.
@@ -19,7 +19,7 @@ This project aims to share historical images of Colorado in an engaging, structu
 ## Resources
 
 - **Data Source**: [Denver Public Library Digital Archive](https://digital.denverlibrary.org/)
-- **OpenAI API**: For text generation and summarization, hashtag creation
+- **Claude AI API**: For text generation and summarization, hashtag creation
 - **Bluesky API**: For image/text posting and rich text processing
 
 ## Tech Stack
@@ -28,7 +28,7 @@ This project aims to share historical images of Colorado in an engaging, structu
 - **Node.js**: Runtime for executing the bot
 - **Cheerio**: Lightweight library for web scraping
 - **Axios**: HTTP client for fetching data
-- **OpenAI SDK**: GPT-powered text generation
+- **Anthropic Claude SDK**: AI-powered text generation
 - **dotenv**: Manages environment variables securely
 
 ## Contributing
