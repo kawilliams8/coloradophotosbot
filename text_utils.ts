@@ -8,7 +8,12 @@ export async function composePostText({
   imageDate,
   summary,
   altSummary,
-}: ScrapedData): Promise<{ text: string; tags: string[] } | null> {
+  description,
+}: ScrapedData): Promise<{
+  text: string;
+  tags: string[];
+  creatorName: string;
+} | null> {
   // Node title | Node date | Node summary
   // Max 300 chars
   // "Camp Hale | 1940-1945 | 10th Mountain Division soldiers rest.."
@@ -31,7 +36,7 @@ export async function composePostText({
           role: "user",
           content: `
             Here is some unstructured historical information:
-            ${title} ${imageDate} ${summary} ${altSummary}
+            ${title} ${imageDate} ${summary} ${altSummary} ${description}
 
             Structure this information for a photo description with no more than 290 total characters.
             The description must be one of two formats: title | date | details OR title | details.
@@ -42,9 +47,14 @@ export async function composePostText({
 
             Next, clean up the text and remove any line breaks or paragraph breaking characters. Remove extraneous 
             punctuation such as a double vertical bar without a date between.
-            Finally, extract and append two short social media friendly hashtags to the end. They must be relevant
+            Next, extract and append two short social media friendly hashtags to the end. They must be relevant
             to the content, such as a city (no state), county, year, decade, or what is being described in the text (e.g., #ColoradoSprings, #1890s).
             These tags do not count towards the 290 characters and must not include "#Colorado".
+            Finally, from the unstructured historical information, look for the name of the photographer.
+            It will probably be labelled with Creator: and followed by instructions to Read the Full Record Details.
+            Format the creator's name so it is not lastName, firstName and doesn't include their lifespan years.
+            Append the creator's name at the very end, always labelled as Creator Name: the name.
+            If the creator's name unknown, don't append the label or a name.
             `,
         },
       ],
@@ -53,11 +63,16 @@ export async function composePostText({
     // @ts-ignore
     const fullText = message.content[0].text || "";
 
+    // Extract creator first (if present)
+    const creatorRegex = /Creator Name:\s*(.+)$/;
+    const creatorMatch = fullText.match(creatorRegex);
+    const creatorName = creatorMatch ? creatorMatch[1].trim() : "Unknown";
+
     const hashtagRegex = /#\w+/g;
     const tags = fullText.match(hashtagRegex) || [];
     const text = fullText.replace(hashtagRegex, "").trim();
 
-    return { text, tags };
+    return { text, tags, creatorName };
   } catch (error) {
     console.error("Error from Claude or composePostText:", error);
     return null;

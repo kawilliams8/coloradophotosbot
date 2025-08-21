@@ -14,6 +14,8 @@ export async function scrapeNodePage(
     const title = $('meta[property="og:title"]').attr("content") ?? "";
     const imageUrl = $('meta[property="og:image"]').attr("content") ?? "";
     const nodeUrl = $('meta[property="og:url"]').attr("content") ?? "";
+    const description =
+      $('meta[property="og:description"]').attr("content") ?? "";
 
     const imageDate =
       $(".titlelabel")
@@ -42,7 +44,15 @@ export async function scrapeNodePage(
         .text()
         .replace(/^Alternate Title\s*/, "") ?? ""; // Strip off "Alternate Title"
 
-    return { title, imageUrl, imageDate, summary, altSummary, nodeUrl };
+    return {
+      title,
+      imageUrl,
+      imageDate,
+      summary,
+      altSummary,
+      nodeUrl,
+      description,
+    };
   } catch (error) {
     console.error("Error scraping the page:", error);
     return undefined;

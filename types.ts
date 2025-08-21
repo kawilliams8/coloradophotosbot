@@ -5,6 +5,7 @@ export interface ScrapedData {
   summary: string;
   altSummary: string;
   nodeUrl: string;
+  description: string;
 }
 
 export interface ScheduledNode {

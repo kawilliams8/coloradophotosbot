@@ -49,7 +49,7 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
 
     // Post with the uploaded image, text and alt text
     if (response) {
-      const { text, tags } = response;
+      const { text, tags, creatorName } = response;
       const result = await agent.post({
         text,
         embed: {
@@ -64,6 +64,7 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
       });
 
       console.log("extracted tags: ", tags);
+      console.log("extracted name: ", creatorName);
 
       console.log("Posted successfully, posting reply with Node url next.");
       process.stdout.write("\u0007"); // meep meep meep! local only :(
@@ -79,7 +80,9 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
             " #Colorado " +
             tags[0] +
             " " +
-            tags[1],
+            tags[1] +
+            "Photographer: " +
+            creatorName,
         });
         await rt.detectFacets(agent); // automatically detects mentions and links
         await agent.post({
