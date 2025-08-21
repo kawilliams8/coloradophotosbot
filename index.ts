@@ -81,7 +81,7 @@ async function postToBluesky(resizedPath: PathLike, scrapedData: ScrapedData) {
             tags[0] +
             " " +
             tags[1] +
-            "Photographer: " +
+            " Photographer: " +
             creatorName,
         });
         await rt.detectFacets(agent); // automatically detects mentions and links

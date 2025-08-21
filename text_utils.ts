@@ -51,10 +51,10 @@ export async function composePostText({
             to the content, such as a city (no state), county, year, decade, or what is being described in the text (e.g., #ColoradoSprings, #1890s).
             These tags do not count towards the 290 characters and must not include "#Colorado".
             Finally, from the unstructured historical information, look for the name of the photographer.
-            It will probably be labelled with Creator: and followed by instructions to Read the Full Record Details.
-            Format the creator's name so it is not lastName, firstName and doesn't include their lifespan years.
-            Append the creator's name at the very end, always labelled as Creator Name: the name.
-            If the creator's name unknown, don't append the label or a name.
+            It will be labelled with 'Creator:' and possibly followed by instructions to 'Read the Full Record Details'.
+            Format the Creator's name so it is legible and doesn't include their lifespan years or other data.
+            Append the cCreator's name at the very end, always labelled as 'Creator Name: ' and the name.
+            If the creator's name undetermined, don't append anything.
             `,
         },
       ],
