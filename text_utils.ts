@@ -55,7 +55,7 @@ export async function composePostText({
 
             Finally, in the description part of the historical information, look specifically for the name of the photographer/creator.
             It will be labeled with 'Creator:' and possibly followed by instructions to 'Read the Full Record Details'.
-            If found, format the Creator's name so it is legible.
+            If found, format the creator's name so it is legible.
             If found and formatted, append 'Creator Name: ' then the formatted name.
             If the creator's name undetermined, don't append anything.
             `,
@@ -64,12 +64,13 @@ export async function composePostText({
     });
     console.log("Claude response message: ", message);
     // @ts-ignore
-    const fullText = message.content[0].text || "";
+    let fullText = message.content[0].text || "";
 
     // Extract creator first (if present)
     const creatorRegex = /Creator Name:\s*(.+)$/;
     const creatorMatch = fullText.match(creatorRegex);
     const creatorName = creatorMatch ? creatorMatch[1].trim() : "Unknown";
+    fullText = fullText.replace(creatorRegex, "").trim();
 
     const hashtagRegex = /#\w+/g;
     const tags = fullText.match(hashtagRegex) || [];
