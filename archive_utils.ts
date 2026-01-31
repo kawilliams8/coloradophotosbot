@@ -1,3 +1,4 @@
+import axios from "axios";
 import * as cheerio from "cheerio";
 import { ScrapedData } from "./types";
 import { browserAxios } from "./http_utils.js";
@@ -53,8 +54,18 @@ export async function scrapeNodePage(
       nodeUrl,
       description,
     };
-  } catch (error) {
-    console.error("Error scraping the page:", error);
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      console.error(
+        "Error scraping the page: 403 Forbidden. The site may be blocking " +
+          "cloud/datacenter IPs (e.g. GitHub Actions). Try running the bot from " +
+          "a local machine or residential network, or contact Denver Public Library " +
+          "about programmatic access.",
+        error,
+      );
+    } else {
+      console.error("Error scraping the page:", error);
+    }
     return undefined;
   }
 }

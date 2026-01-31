@@ -31,6 +31,11 @@ This project aims to share historical images of Colorado in an engaging, structu
 - **Anthropic Claude SDK**: AI-powered text generation
 - **dotenv**: Manages environment variables securely
 
+## Troubleshooting
+
+**403 Forbidden when scraping**  
+The Denver Public Library site may block requests from cloud/datacenter IPs (e.g. GitHub Actions). If the bot fails with 403, run it from a local machine or a network with a residential IP (e.g. `npm run start` on your computer or a self-hosted runner). You can also contact Denver Public Library to ask about programmatic access or IP whitelisting.
+
 ## Contributing
 
 Contributions are welcome! Feel free to open issues and submit pull requests.
