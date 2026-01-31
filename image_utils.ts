@@ -1,7 +1,7 @@
-import axios from "axios";
 import fs, { PathLike } from "fs";
 import path from "path";
 import sharp from "sharp";
+import { browserAxios } from "./http_utils.js";
 
 // Maximum file size in bytes (e.g., 500 KB)
 const MAX_FILE_SIZE = 500 * 1024;
@@ -12,10 +12,10 @@ const TARGET_HEIGHT = 600;
 
 export async function downloadImage(
   url: string | undefined,
-  outputPath: PathLike
+  outputPath: PathLike,
 ) {
   if (!url) throw new Error("Invalid image URL provided. Cannot download.");
-  const response = await axios({
+  const response = await browserAxios({
     url,
     responseType: "stream",
   });
@@ -32,7 +32,7 @@ export async function downloadImage(
 
 export async function checkAndResizeImage(
   imagePath: PathLike,
-  __dirname: string
+  __dirname: string,
 ) {
   const stats = fs.statSync(imagePath);
 
@@ -58,7 +58,7 @@ export async function processImage(url: string, __dirname: string) {
     await downloadImage(url, fullsizeImagePath);
     const resizedImagePath = await checkAndResizeImage(
       fullsizeImagePath,
-      __dirname
+      __dirname,
     );
 
     console.log(`Final image available at: ${resizedImagePath}`);

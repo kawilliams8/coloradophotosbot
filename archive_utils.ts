@@ -1,13 +1,13 @@
-import axios from "axios";
 import * as cheerio from "cheerio";
 import { ScrapedData } from "./types";
+import { browserAxios } from "./http_utils.js";
 
 export async function scrapeNodePage(
-  url: string
+  url: string,
 ): Promise<ScrapedData | undefined> {
   try {
-    // Fetch the HTML of the page
-    const { data } = await axios.get(url);
+    // Fetch the HTML of the page (browser-like headers to avoid 403)
+    const { data } = await browserAxios.get(url);
 
     // Load HTML into cheerio to parse with JQuery-style methods
     const $ = cheerio.load(data);
