@@ -4,7 +4,7 @@ on:
     branches:
       - "main"
   schedule:
-    - cron: "10 11 * * *" # In UTC, every 5:10am MDT (ish).
+    - cron: "5 23 * * *" # In UTC, every and 5:05pm MDT (ish).
 
 jobs:
   run-bot:
